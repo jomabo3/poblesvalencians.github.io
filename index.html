@@ -144,13 +144,14 @@
 
     <script>
         const BIN_ID = '6a8c3388da38895dfe0a5a39';
-        const API_KEY = '$2a$10$.JKB6lZ/ebMDTFa/BtACMuPuytOguBPOM2A7boY/Ti.pkXxyckjb6';
+        // ACCESS KEY SEGURA AMB PERMISOS LIMITATS
+        const ACCESS_KEY = '$2a$10$jGdGOrUpfifAwZbmhlw1s.H4vmk5XN1Iz7d1DWMsCem.iDNynZmKq';
 
-        // CONTRASENYES D'EDICIÓ PER A CADA USUARI (MODIFICA-LES COM VULGUES)
+        // CONTRASENYES D'EDICIÓ PER A CADA USUARI
         const CONTRASENYES = {
-            "Josep": "1",
-            "Mariona": "2",
-            "Altres": "3"
+            "Josep": "1234",
+            "Mariona": "1234",
+            "Altres": "1234"
         };
 
         const llistaAmics = Object.keys(CONTRASENYES);
@@ -165,7 +166,7 @@
         let totalMunicipis = 0;
         let modeComparacio = false;
         let dadesComparacio = null;
-        let autoritzatPerEditar = false; // Control de seguretat per sessió
+        let autoritzatPerEditar = false;
 
         // Elements HTML
         const selectEl = document.getElementById('select-usuari');
@@ -190,7 +191,7 @@
         function triarUsuariInicial(nom) {
             usuariActual = nom;
             selectEl.value = nom;
-            autoritzatPerEditar = false; // Reinicia l'autorització
+            autoritzatPerEditar = false;
             document.getElementById('modal-inicial').style.display = 'none';
             actualitzarMapa();
         }
@@ -202,11 +203,11 @@
         }
         map.on('zoomend', controlarVisibilitatNoms);
 
-        // Llegir del núvol
+        // Llegir del núvol utilitzant X-Access-Key
         function carregarDadesNuvol() {
             document.getElementById('comptador').innerText = "Sincronitzant amb el núvol...";
             fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-                headers: { 'X-Master-Key': API_KEY }
+                headers: { 'X-Access-Key': ACCESS_KEY }
             })
             .then(res => res.json())
             .then(data => {
@@ -219,14 +220,14 @@
             });
         }
 
-        // Enviar al núvol
+        // Enviar al núvol utilitzant X-Access-Key
         function guardarDadesNuvol() {
             document.getElementById('comptador').innerText = "Guardant canvis...";
             fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
-                    'X-Master-Key': API_KEY
+                    'X-Access-Key': ACCESS_KEY
                 },
                 body: JSON.stringify(dadesGlobals)
             })
@@ -237,7 +238,7 @@
         function canviarUsuari() {
             modeComparacio = false;
             usuariActual = selectEl.value;
-            autoritzatPerEditar = false; // Reinicia l'autorització en canviar d'usuari
+            autoritzatPerEditar = false;
             actualitzarMapa();
         }
 
@@ -341,13 +342,12 @@
                         layer.on('click', () => {
                             if (modeComparacio || !usuariActual) return;
 
-                            // Si no està autoritzat, demanar contrasenya
                             if (!autoritzatPerEditar) {
                                 const passIngressada = prompt(`Introdueix el codi de seguretat de ${usuariActual} per a poder editar:`);
-                                if (passIngressada === null) return; // Si cancel·la la finestra prompt
+                                if (passIngressada === null) return;
                                 
                                 if (passIngressada === CONTRASENYES[usuariActual]) {
-                                    autoritzatPerEditar = true; // Queda aprovat per a la resta de clics
+                                    autoritzatPerEditar = true;
                                 } else {
                                     alert("Codi incorrecte. No pots modificar el mapa d'aquesta persona.");
                                     return;
