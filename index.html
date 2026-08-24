@@ -48,6 +48,8 @@
         .btn:hover { background-color: #2d6a4f; }
         .btn-secondary { background-color: #3a86ff; }
         .btn-secondary:hover { background-color: #2667cc; }
+        .btn-success { background-color: #2b9348; }
+        .btn-success:hover { background-color: #007200; }
 
         #comptador { margin: 5px 0 0 0; font-size: 0.9rem; color: #d8f3dc; }
         #map { flex-grow: 1; width: 100%; }
@@ -68,7 +70,7 @@
         }
         #map.mostrar-noms .leaflet-tooltip.etiqueta-municipi { display: block; }
 
-        /* Estils generals per a les finestres emergents (Modals) */
+        /* Modals */
         .modal-overlay {
             display: flex;
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -81,7 +83,7 @@
         }
         .modal-contingut h3 { margin-top: 0; color: #1b4332; font-size: 1.3rem; }
         .modal-contingut label { display: block; margin: 10px 0 5px; font-weight: bold; text-align: left; }
-        .modal-contingut select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; }
+        .modal-contingut input, .modal-contingut select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; box-sizing: border-box; }
         .color-box { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 6px; vertical-align: middle; }
 
         .btn-opcio-usuari {
@@ -102,6 +104,26 @@
             <h3>Quin mapa vols veure?</h3>
             <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">Selecciona una persona per a començar:</p>
             <div id="llista-botons-usuaris"></div>
+            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ccc;">
+            <button class="btn btn-success" style="width: 100%; padding: 10px;" onclick="obrirModalNouUsuari()">➕ Crear nou usuari</button>
+        </div>
+    </div>
+
+    <!-- Modal per afegir un nou usuari -->
+    <div id="modal-nou-usuari" class="modal-overlay" style="display: none;">
+        <div class="modal-contingut" style="text-align: left;">
+            <h3 style="text-align: center;">Nou Usuari</h3>
+            
+            <label for="input-nom-nou">Nom de l'usuari:</label>
+            <input type="text" id="input-nom-nou" placeholder="Ex: Pere" />
+
+            <label for="input-pass-nou">Codi de seguretat (per a editar):</label>
+            <input type="password" id="input-pass-nou" placeholder="Ex: 1234" />
+
+            <div style="text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn" style="background-color: #6c757d;" onclick="tancarModalNouUsuari()">Cancel·lar</button>
+                <button class="btn btn-success" onclick="crearUsuari()">Guardar Usuari</button>
+            </div>
         </div>
     </div>
 
@@ -113,6 +135,7 @@
             <select id="select-usuari" onchange="canviarUsuari()"></select>
             
             <button class="btn btn-secondary" onclick="obrirModalComparativa()">🔍 Comparar usuaris</button>
+            <button class="btn btn-success" onclick="obrirModalNouUsuari()">➕ Nou usuari</button>
         </div>
 
         <p id="comptador">Sincronitzant amb el núvol...</p>
@@ -144,17 +167,7 @@
 
     <script>
         const BIN_ID = '6a8c3388da38895dfe0a5a39';
-        // ACCESS KEY SEGURA AMB PERMISOS LIMITATS
         const ACCESS_KEY = '$2a$10$jGdGOrUpfifAwZbmhlw1s.H4vmk5XN1Iz7d1DWMsCem.iDNynZmKq';
-
-        // CONTRASENYES D'EDICIÓ PER A CADA USUARI
-        const CONTRASENYES = {
-            "Josep": "1234",
-            "Mariona": "1234",
-            "Altres": "1234"
-        };
-
-        const llistaAmics = Object.keys(CONTRASENYES);
 
         proj4.defs("EPSG:25830", "+proj=utm +zone=30 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
         const map = L.map('map').setView([39.48, -0.37], 8);
@@ -162,6 +175,9 @@
 
         let usuariActual = null;
         let dadesGlobals = { "Josep": [], "Mariona": [], "Altres": [] };
+        // CONTRASENYES ACTUALITZADES PER DEFECTE
+        let contrasenyesGlobals = { "Josep": "1", "Mariona": "2", "Altres": "3" };
+        
         let geojsonLayer = null;
         let totalMunicipis = 0;
         let modeComparacio = false;
@@ -174,19 +190,29 @@
         const selectC2 = document.getElementById('comparar-2');
         const contenidorBotonsInicials = document.getElementById('llista-botons-usuaris');
 
-        // Omplir opcions
-        llistaAmics.forEach(nom => {
-            selectEl.add(new Option(nom, nom));
-            selectC1.add(new Option(nom, nom));
-            selectC2.add(new Option(nom, nom));
+        function actualitzarDesplegablesIInterficie() {
+            selectEl.innerHTML = '';
+            selectC1.innerHTML = '';
+            selectC2.innerHTML = '';
+            contenidorBotonsInicials.innerHTML = '';
 
-            const btn = document.createElement('button');
-            btn.className = 'btn btn-opcio-usuari';
-            btn.innerText = nom;
-            btn.onclick = () => triarUsuariInicial(nom);
-            contenidorBotonsInicials.appendChild(btn);
-        });
-        if (llistaAmics.length > 1) selectC2.value = llistaAmics[1];
+            const llistaNoms = Object.keys(contrasenyesGlobals);
+
+            llistaNoms.forEach(nom => {
+                selectEl.add(new Option(nom, nom));
+                selectC1.add(new Option(nom, nom));
+                selectC2.add(new Option(nom, nom));
+
+                const btn = document.createElement('button');
+                btn.className = 'btn btn-opcio-usuari';
+                btn.innerText = nom;
+                btn.onclick = () => triarUsuariInicial(nom);
+                contenidorBotonsInicials.appendChild(btn);
+            });
+
+            if (llistaNoms.length > 1) selectC2.value = llistaNoms[1];
+            if (usuariActual) selectEl.value = usuariActual;
+        }
 
         function triarUsuariInicial(nom) {
             usuariActual = nom;
@@ -196,6 +222,45 @@
             actualitzarMapa();
         }
 
+        function obrirModalNouUsuari() {
+            document.getElementById('input-nom-nou').value = '';
+            document.getElementById('input-pass-nou').value = '';
+            document.getElementById('modal-nou-usuari').style.display = 'flex';
+        }
+
+        function tancarModalNouUsuari() {
+            document.getElementById('modal-nou-usuari').style.display = 'none';
+        }
+
+        function crearUsuari() {
+            const nom = document.getElementById('input-nom-nou').value.trim();
+            const pass = document.getElementById('input-pass-nou').value.trim();
+
+            if (!nom || !pass) {
+                alert("Has d'omplir el nom i la contrasenya.");
+                return;
+            }
+
+            if (contrasenyesGlobals[nom]) {
+                alert("Ja existeix un usuari amb aquest nom.");
+                return;
+            }
+
+            contrasenyesGlobals[nom] = pass;
+            dadesGlobals[nom] = [];
+            autoritzatPerEditar = true; // Autoritzat automàticament en crear-lo
+
+            actualitzarDesplegablesIInterficie();
+            tancarModalNouUsuari();
+            
+            usuariActual = nom;
+            selectEl.value = nom;
+            document.getElementById('modal-inicial').style.display = 'none';
+
+            actualitzarMapa();
+            guardarDadesNuvol();
+        }
+
         function controlarVisibilitatNoms() {
             const mapContainer = document.getElementById('map');
             if (map.getZoom() >= 11) mapContainer.classList.add('mostrar-noms');
@@ -203,7 +268,7 @@
         }
         map.on('zoomend', controlarVisibilitatNoms);
 
-        // Llegir del núvol utilitzant X-Access-Key
+        // Llegir del núvol
         function carregarDadesNuvol() {
             document.getElementById('comptador').innerText = "Sincronitzant amb el núvol...";
             fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -211,7 +276,17 @@
             })
             .then(res => res.json())
             .then(data => {
-                dadesGlobals = data.record || { "Josep": [], "Mariona": [], "Altres": [] };
+                const rec = data.record || {};
+                
+                // Estructura per a contrasenyes i dades
+                if (rec.pobles) {
+                    dadesGlobals = rec.pobles;
+                    contrasenyesGlobals = rec.contrasenyes || contrasenyesGlobals;
+                } else {
+                    dadesGlobals = rec;
+                }
+
+                actualitzarDesplegablesIInterficie();
                 if (usuariActual) actualitzarMapa();
             })
             .catch(err => {
@@ -220,16 +295,22 @@
             });
         }
 
-        // Enviar al núvol utilitzant X-Access-Key
+        // Enviar al núvol
         function guardarDadesNuvol() {
             document.getElementById('comptador').innerText = "Guardant canvis...";
+            
+            const payload = {
+                pobles: dadesGlobals,
+                contrasenyes: contrasenyesGlobals
+            };
+
             fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Access-Key': ACCESS_KEY
                 },
-                body: JSON.stringify(dadesGlobals)
+                body: JSON.stringify(payload)
             })
             .then(() => actualitzarComptador())
             .catch(err => console.error("Error guardant:", err));
@@ -346,7 +427,7 @@
                                 const passIngressada = prompt(`Introdueix el codi de seguretat de ${usuariActual} per a poder editar:`);
                                 if (passIngressada === null) return;
                                 
-                                if (passIngressada === CONTRASENYES[usuariActual]) {
+                                if (passIngressada === contrasenyesGlobals[usuariActual]) {
                                     autoritzatPerEditar = true;
                                 } else {
                                     alert("Codi incorrecte. No pots modificar el mapa d'aquesta persona.");
