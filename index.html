@@ -34,7 +34,7 @@
             cursor: pointer;
         }
 
-        .share-btn {
+        .btn {
             background-color: #40916c;
             color: white;
             border: none;
@@ -44,14 +44,16 @@
             font-weight: bold;
             cursor: pointer;
         }
-        .share-btn:hover { background-color: #2d6a4f; }
+        .btn:hover { background-color: #2d6a4f; }
+        .btn-secondary { background-color: #3a86ff; }
+        .btn-secondary:hover { background-color: #2667cc; }
 
         #comptador { margin: 5px 0 0 0; font-size: 0.9rem; color: #d8f3dc; }
         #map { flex-grow: 1; width: 100%; }
 
         /* Estil per a les etiquetes dels municipis */
         .leaflet-tooltip.etiqueta-municipi {
-            display: none; /* Amagats per defecte quan s'està lluny */
+            display: none;
             background: rgba(255, 255, 255, 0.9);
             border: 1px solid #1b4332;
             border-radius: 3px;
@@ -61,13 +63,26 @@
             color: #1b4332;
             white-space: nowrap;
             box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-            pointer-events: none; /* Permet fer clic al polígon que hi ha davall */
+            pointer-events: none;
         }
+        #map.mostrar-noms .leaflet-tooltip.etiqueta-municipi { display: block; }
 
-        /* Quan el mapa té la classe 'mostrar-noms' (zoom prop), es mostren */
-        #map.mostrar-noms .leaflet-tooltip.etiqueta-municipi {
-            display: block;
+        /* Finestra emergent (Modal) de Comparativa */
+        #modal-comparativa {
+            display: none;
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); z-index: 3000;
+            justify-content: center; align-items: center;
         }
+        .modal-contingut {
+            background: white; color: #333; padding: 20px; border-radius: 8px;
+            width: 90%; max-width: 400px; text-align: left; box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .modal-contingut h3 { margin-top: 0; color: #1b4332; }
+        .modal-contingut label { display: block; margin: 10px 0 5px; font-weight: bold; }
+        .modal-contingut select { width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 15px; }
+        .lleenda { font-size: 0.85rem; margin: 15px 0; line-height: 1.5; }
+        .color-box { display: inline-block; width: 12px; height: 12px; border-radius: 2px; margin-right: 5px; vertical-align: middle; }
     </style>
 </head>
 <body>
@@ -78,7 +93,8 @@
         <div class="controls-container">
             <label for="select-usuari">Usuari: </label>
             <select id="select-usuari" onchange="canviarUsuari()"></select>
-            <button class="share-btn" onclick="copiarEnllacCompartir()">📋 Copiar enllaç del meu mapa</button>
+            <button class="btn" onclick="copiarEnllacCompartir()">📋 Copiar enllaç</button>
+            <button class="btn btn-secondary" onclick="obrirModalComparativa()">🔍 Comparar usuaris</button>
         </div>
 
         <p id="comptador">Carregant mapa...</p>
@@ -86,14 +102,39 @@
 
     <div id="map"></div>
 
+    <!-- Modal de Comparativa -->
+    <div id="modal-comparativa">
+        <div class="modal-contingut">
+            <h3>Comparar Usuaris</h3>
+            <label for="comparar-1">Primer usuari:</label>
+            <select id="comparar-1"></select>
+
+            <label for="comparar-2">Segon usuari:</label>
+            <select id="comparar-2"></select>
+
+            <div class="lleenda">
+                <b>Llegenda del mapa comparatiu:</b><br>
+                <span class="color-box" style="background: #2d6a4f;"></span> En comú (tots dos)<br>
+                <span class="color-box" style="background: #3a86ff;"></span> Només el primer usuari<br>
+                <span class="color-box" style="background: #fb8500;"></span> Només el segon usuari<br>
+                <span class="color-box" style="background: #adb5bd;"></span> Cap dels dos
+            </div>
+
+            <div id="resultats-comparativa" style="font-size: 0.9rem; font-weight: bold; margin-bottom: 15px; color: #1b4332;"></div>
+
+            <div style="text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn" style="background-color: #6c757d;" onclick="eixirComparativa()">Tancar / Eixir</button>
+                <button class="btn" style="background-color: #2d6a4f;" onclick="aplicarComparativa()">Comparar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // 1. LLISTA D'USUARIS DEFINIDA
         const llistaAmics = ["Josep", "Mariona", "Altres"];
 
-        // Configuració de Proj4js i Mapa
         proj4.defs("EPSG:25830", "+proj=utm +zone=30 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
         const map = L.map('map').setView([39.48, -0.37], 8);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
@@ -102,32 +143,29 @@
         let visitats = [];
         let geojsonLayer = null;
         let totalMunicipis = 0;
+        let modeComparacio = false;
+        let dadesComparacio = null; // Guardarà { u1, u2, comú, nom1, nom2 }
 
-        // Omplir el menú desplegable d'usuaris
+        // Omplir desplegables
         const selectEl = document.getElementById('select-usuari');
+        const selectC1 = document.getElementById('comparar-1');
+        const selectC2 = document.getElementById('comparar-2');
+
         llistaAmics.forEach(nom => {
-            const opt = document.createElement('option');
-            opt.value = nom;
-            opt.innerText = nom;
-            if (nom === usuariActual) opt.selected = true;
-            selectEl.appendChild(opt);
+            selectEl.add(new Option(nom, nom));
+            selectC1.add(new Option(nom, nom));
+            selectC2.add(new Option(nom, nom));
         });
+        selectEl.value = usuariActual;
+        if (llistaAmics.length > 1) selectC2.value = llistaAmics[1];
 
-        // Control de visibilitat dels noms segons el zoom
         function controlarVisibilitatNoms() {
-            const zoomThreshold = 11; // Nivell de zoom a partir del qual es veuen els noms
             const mapContainer = document.getElementById('map');
-            
-            if (map.getZoom() >= zoomThreshold) {
-                mapContainer.classList.add('mostrar-noms');
-            } else {
-                mapContainer.classList.remove('mostrar-noms');
-            }
+            if (map.getZoom() >= 11) mapContainer.classList.add('mostrar-noms');
+            else mapContainer.classList.remove('mostrar-noms');
         }
-
         map.on('zoomend', controlarVisibilitatNoms);
 
-        // Carregar dades des de l'enllaç compartit (si existeix)
         function carregarDesDeURL() {
             const hash = window.location.hash.substring(1);
             if (hash && hash.includes('=')) {
@@ -144,6 +182,7 @@
         }
 
         function carregarDadesUsuari() {
+            modeComparacio = false;
             const dadesGuardades = localStorage.getItem(`pobles_visitats_${usuariActual}`);
             visitats = dadesGuardades ? JSON.parse(dadesGuardades) : [];
             actualitzarMapa();
@@ -163,31 +202,79 @@
         function copiarEnllacCompartir() {
             const urlBase = window.location.href.split('#')[0];
             const urlCompartir = `${urlBase}#${usuariActual}=${visitats.join(',')}`;
-            
             navigator.clipboard.writeText(urlCompartir).then(() => {
-                alert(`S'ha copiat l'enllaç del mapa de ${usuariActual} al teu portapapers!\nJa el pots enviar.`);
-            }).catch(() => {
-                prompt("Copia aquest enllaç manualment:", urlCompartir);
+                alert(`S'ha copiat l'enllaç del mapa de ${usuariActual} al teu portapapers!`);
             });
         }
 
-        function reprojectarCoordenades(coords) {
-            if (typeof coords[0] === 'number') return proj4("EPSG:25830", "EPSG:4326", coords);
-            return coords.map(reprojectarCoordenades);
+        // Funcions del Modal de Comparativa
+        function obrirModalComparativa() {
+            document.getElementById('modal-comparativa').style.display = 'flex';
+            document.getElementById('resultats-comparativa').innerText = '';
+        }
+
+        function eixirComparativa() {
+            document.getElementById('modal-comparativa').style.display = 'none';
+            if (modeComparacio) {
+                modeComparacio = false;
+                carregarDadesUsuari();
+            }
+        }
+
+        function aplicarComparativa() {
+            const nom1 = selectC1.value;
+            const nom2 = selectC2.value;
+
+            if (nom1 === nom2) {
+                alert("Has de seleccionar dos usuaris diferents per a comparar.");
+                return;
+            }
+
+            const arr1 = JSON.parse(localStorage.getItem(`pobles_visitats_${nom1}`)) || [];
+            const arr2 = JSON.parse(localStorage.getItem(`pobles_visitats_${nom2}`)) || [];
+
+            const comu = arr1.filter(id => arr2.includes(id));
+            const sols1 = arr1.filter(id => !arr2.includes(id));
+            const sols2 = arr2.filter(id => !arr1.includes(id));
+
+            dadesComparacio = { nom1, nom2, comu, sols1, sols2 };
+            modeComparacio = true;
+
+            document.getElementById('resultats-comparativa').innerHTML = 
+                `Resultats: ${comu.length} en comú | ${nom1}: ${sols1.length} exclusius | ${nom2}: ${sols2.length} exclusius`;
+
+            if (geojsonLayer) geojsonLayer.setStyle(obtenirEstil);
+            document.getElementById('comptador').innerText = `Comparant: ${nom1} vs ${nom2}`;
+            document.getElementById('modal-comparativa').style.display = 'none';
         }
 
         function obtenirEstil(feature) {
             const id = feature.properties.MUNIINE;
-            const estaVisitat = visitats.includes(id);
-            return {
-                fillColor: estaVisitat ? '#2d6a4f' : '#adb5bd',
-                weight: 1, opacity: 1, color: '#ffffff',
-                fillOpacity: estaVisitat ? 0.75 : 0.4
-            };
+
+            if (modeComparacio && dadesComparacio) {
+                if (dadesComparacio.comu.includes(id)) {
+                    return { fillColor: '#2d6a4f', weight: 1, color: '#fff', fillOpacity: 0.8 }; // Comú (Verd)
+                } else if (dadesComparacio.sols1.includes(id)) {
+                    return { fillColor: '#3a86ff', weight: 1, color: '#fff', fillOpacity: 0.7 }; // Sols U1 (Blau)
+                } else if (dadesComparacio.sols2.includes(id)) {
+                    return { fillColor: '#fb8500', weight: 1, color: '#fff', fillOpacity: 0.7 }; // Sols U2 (Taronja)
+                } else {
+                    return { fillColor: '#adb5bd', weight: 1, color: '#fff', fillOpacity: 0.3 }; // Cap
+                }
+            } else {
+                const estaVisitat = visitats.includes(id);
+                return {
+                    fillColor: estaVisitat ? '#2d6a4f' : '#adb5bd',
+                    weight: 1, opacity: 1, color: '#ffffff',
+                    fillOpacity: estaVisitat ? 0.75 : 0.4
+                };
+            }
         }
 
         function actualitzarComptador() {
-            document.getElementById('comptador').innerText = `${usuariActual} ha visitat ${visitats.length} de ${totalMunicipis} pobles`;
+            if (!modeComparacio) {
+                document.getElementById('comptador').innerText = `${usuariActual} ha visitat ${visitats.length} de ${totalMunicipis} pobles`;
+            }
         }
 
         function actualitzarMapa() {
@@ -215,6 +302,7 @@
                         });
 
                         layer.on('click', () => {
+                            if (modeComparacio) return; // Desactiva clics al mapa mentre es compara
                             if (visitats.includes(id)) {
                                 visitats = visitats.filter(item => item !== id);
                             } else {
@@ -227,11 +315,15 @@
                 }).addTo(map);
 
                 map.fitBounds(geojsonLayer.getBounds());
-                
                 carregarDesDeURL();
                 carregarDadesUsuari();
-                controlarVisibilitatNoms(); // Comprova la visibilitat inicial
+                controlarVisibilitatNoms();
             });
+
+        function reprojectarCoordenades(coords) {
+            if (typeof coords[0] === 'number') return proj4("EPSG:25830", "EPSG:4326", coords);
+            return coords.map(reprojectarCoordenades);
+        }
     </script>
 </body>
 </html>
