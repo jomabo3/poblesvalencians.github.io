@@ -4,189 +4,197 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Els meus Pobles Valencians</title>
+
+    <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        body { margin: 0; padding: 0; font-family: system-ui, sans-serif; display: flex; flex-direction: column; height: 100vh; }
+        #header { background-color: #1b4332; color: white; padding: 12px; text-align: center; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        #header h1 { margin: 0 0 8px 0; font-size: 1.2rem; }
+        
+        .controls-container {
             display: flex;
-            flex-direction: column;
-            height: 100vh;
+            justify-content: center;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 5px;
         }
-        #header {
-            background-color: #1b4332;
-            color: white;
-            padding: 15px;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-            z-index: 1000;
-        }
-        #header h1 {
-            margin: 0 0 5px 0;
-            font-size: 1.2rem;
-        }
-        #comptador {
-            margin: 0;
+
+        #select-usuari {
+            padding: 5px 10px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
             font-size: 0.95rem;
-            color: #d8f3dc;
             font-weight: bold;
+            background-color: white;
+            color: #1b4332;
+            cursor: pointer;
         }
-        #map {
-            flex-grow: 1;
-            width: 100%;
-        }
-        .popup-btn {
-            background-color: #2d6a4f;
+
+        .share-btn {
+            background-color: #40916c;
             color: white;
             border: none;
             padding: 6px 12px;
             border-radius: 4px;
-            cursor: pointer;
-            margin-top: 5px;
+            font-size: 0.85rem;
             font-weight: bold;
+            cursor: pointer;
         }
-        .popup-btn:hover {
-            background-color: #1b4332;
-        }
+        .share-btn:hover { background-color: #2d6a4f; }
+
+        #comptador { margin: 5px 0 0 0; font-size: 0.9rem; color: #d8f3dc; }
+        #map { flex-grow: 1; width: 100%; }
     </style>
 </head>
 <body>
 
     <div id="header">
         <h1>Els meus Pobles Valencians</h1>
-        <p id="comptador">Carregant municipis...</p>
+        
+        <div class="controls-container">
+            <label for="select-usuari">Usuari: </label>
+            <select id="select-usuari" onchange="canviarUsuari()"></select>
+            <button class="share-btn" onclick="copiarEnllacCompartir()">📋 Copiar enllaç del meu mapa</button>
+        </div>
+
+        <p id="comptador">Carregant mapa...</p>
     </div>
 
     <div id="map"></div>
 
+    <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // 1. Definir la projecció EPSG:25830 del GeoJSON
+        // 1. LLISTA PREDEFINIDA D'AMICS (Pots afegir o canviar els noms ací)
+        const llistaAmics = ["Pere", "Maria", "Joan", "Anna", "Carlos"];
+
+        // Configuració de Proj4js i Mapa
         proj4.defs("EPSG:25830", "+proj=utm +zone=30 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
-
-        // Inicialitzar el mapa centrat a la Comunitat Valenciana
         const map = L.map('map').setView([39.48, -0.37], 8);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
 
-        // Capa base d'OpenStreetMap
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(map);
-
-        // Carregar municipis visitats des del LocalStorage
-        let visitats = JSON.parse(localStorage.getItem('pobles_visitats')) || [];
-        let geojsonLayer;
+        let usuariActual = localStorage.getItem('pobles_usuari_actiu') || llistaAmics[0];
+        let visitats = [];
+        let geojsonLayer = null;
         let totalMunicipis = 0;
 
-        // Funció recursiva per transformar coordenades d'EPSG:25830 a EPSG:4326
-        function reprojectarCoordenades(coords) {
-            if (typeof coords[0] === 'number') {
-                return proj4("EPSG:25830", "EPSG:4326", coords);
+        // Omplir el menú desplegable d'usuaris
+        const selectEl = document.getElementById('select-usuari');
+        llistaAmics.forEach(nom => {
+            const opt = document.createElement('option');
+            opt.value = nom;
+            opt.innerText = nom;
+            if (nom === usuariActual) opt.selected = true;
+            selectEl.appendChild(opt);
+        });
+
+        // Comprovar si venim d'un enllaç compartit amb dades a la URL (#Pere=46001,46002...)
+        function carregarDesDeURL() {
+            const hash = window.location.hash.substring(1);
+            if (hash && hash.includes('=')) {
+                const [usuariURL, ids] = hash.split('=');
+                if (ids) {
+                    const llistaIds = ids.split(',');
+                    // Guardem les dades rebudes per a aquest usuari
+                    localStorage.setItem(`pobles_visitats_${usuariURL}`, JSON.stringify(llistaIds));
+                    if (llistaAmics.includes(usuariURL)) {
+                        usuariActual = usuariURL;
+                        selectEl.value = usuariActual;
+                    }
+                }
             }
+        }
+
+        function carregarDadesUsuari() {
+            const dadesGuardades = localStorage.getItem(`pobles_visitats_${usuariActual}`);
+            visitats = dadesGuardades ? JSON.parse(dadesGuardades) : [];
+            actualitzarMapa();
+        }
+
+        function guardarDadesUsuari() {
+            localStorage.setItem(`pobles_visitats_${usuariActual}`, JSON.stringify(visitats));
+            localStorage.setItem('pobles_usuari_actiu', usuariActual);
+        }
+
+        function canviarUsuari() {
+            usuariActual = selectEl.value;
+            localStorage.setItem('pobles_usuari_actiu', usuariActual);
+            carregarDadesUsuari();
+        }
+
+        function copiarEnllacCompartir() {
+            const urlBase = window.location.href.split('#')[0];
+            const urlCompartir = `${urlBase}#${usuariActual}=${visitats.join(',')}`;
+            
+            navigator.clipboard.writeText(urlCompartir).then(() => {
+                alert(`S'ha copiat l'enllaç del mapa de ${usuariActual} al teu portapapers!\nAra el pots enviar per WhatsApp.`);
+            }).catch(() => {
+                prompt("Copia aquest enllaç manualment:", urlCompartir);
+            });
+        }
+
+        // Reprojecció de coordenades i estil
+        function reprojectarCoordenades(coords) {
+            if (typeof coords[0] === 'number') return proj4("EPSG:25830", "EPSG:4326", coords);
             return coords.map(reprojectarCoordenades);
         }
 
-        function reprojectarGeoJSON(geojson) {
-            const geodades = JSON.parse(JSON.stringify(geojson));
-            geodades.features.forEach(feature => {
-                if (feature.geometry && feature.geometry.coordinates) {
-                    feature.geometry.coordinates = reprojectarCoordenades(feature.geometry.coordinates);
-                }
-            });
-            return geodades;
-        }
-
-        // Funció per a obtenir l'estil visual de cada municipi
         function obtenirEstil(feature) {
             const id = feature.properties.MUNIINE;
             const estaVisitat = visitats.includes(id);
             return {
                 fillColor: estaVisitat ? '#2d6a4f' : '#adb5bd',
-                weight: 1,
-                opacity: 1,
-                color: '#ffffff',
+                weight: 1, opacity: 1, color: '#ffffff',
                 fillOpacity: estaVisitat ? 0.75 : 0.4
             };
         }
 
         function actualitzarComptador() {
-            const comptadorEl = document.getElementById('comptador');
-            comptadorEl.innerText = `Has visitat ${visitats.length} de ${totalMunicipis} pobles`;
+            document.getElementById('comptador').innerText = `${usuariActual} ha visitat ${visitats.length} de ${totalMunicipis} pobles`;
         }
 
-        // 2. Carregar el fitxer GeoJSON
-        fetch('ca_municipios_20260805.geojson')
-            .then(response => response.json())
-            .then(data => {
-                // Reprojectar les coordenades
-                const dataReprojectada = reprojectarGeoJSON(data);
-                totalMunicipis = dataReprojectada.features.length;
+        function actualitzarMapa() {
+            if (geojsonLayer) geojsonLayer.setStyle(obtenirEstil);
+            actualitzarComptador();
+        }
 
-                // Afegir la capa GeoJSON al mapa
-                geojsonLayer = L.geoJSON(dataReprojectada, {
+        // Carregar GeoJSON
+        fetch('ca_municipios_20260805.geojson')
+            .then(res => res.json())
+            .then(data => {
+                data.features.forEach(f => f.geometry.coordinates = reprojectarCoordenades(f.geometry.coordinates));
+                totalMunicipis = data.features.length;
+
+                geojsonLayer = L.geoJSON(data, {
                     style: obtenirEstil,
                     onEachFeature: function(feature, layer) {
                         const id = feature.properties.MUNIINE;
                         const nom = feature.properties.NOMBRE;
 
-                        function carregarPopup() {
-                            const estaVisitat = visitats.includes(id);
-                            layer.bindPopup(`
-                                <b>${nom}</b><br>
-                                Estat: <b>${estaVisitat ? '✔ Visitat' : '❌ Pendent'}</b><br><br>
-                                <button class="popup-btn" onclick="togglePoble('${id}')">
-                                    ${estaVisitat ? 'Marcar com a pendent' : 'Marcar com a visitat'}
-                                </button>
-                            `);
-                        }
+                        layer.on('click', () => {
+                            if (visitats.includes(id)) {
+                                visitats = visitats.filter(item => item !== id);
+                            } else {
+                                visitats.push(id);
+                            }
+                            guardarDadesUsuari();
+                            actualitzarMapa();
+                        });
 
-                        carregarPopup();
+                        layer.bindTooltip(() => `<b>${nom}</b>`, { sticky: true });
                     }
                 }).addTo(map);
 
-                // Enquadrar el mapa als límits de tots els municipis
                 map.fitBounds(geojsonLayer.getBounds());
-
-                actualitzarComptador();
-            })
-            .catch(err => {
-                console.error("Error carregant el fitxer GeoJSON:", err);
-                document.getElementById('comptador').innerText = "Error en carregar el fitxer GeoJSON.";
+                
+                carregarDesDeURL();
+                carregarDadesUsuari();
             });
-
-        // 3. Funció per a canviar l'estat de visitat
-        window.togglePoble = function(id) {
-            if (visitats.includes(id)) {
-                visitats = visitats.filter(item => item !== id);
-            } else {
-                visitats.push(id);
-            }
-
-            // Guardar canvis a LocalStorage
-            localStorage.setItem('pobles_visitats', JSON.stringify(visitats));
-
-            // Reaplicar l'estil a tots els polígons del mapa
-            geojsonLayer.setStyle(obtenirEstil);
-
-            // Reconfigurar els popups amb el nou estat
-            geojsonLayer.eachLayer(function(layer) {
-                const featureId = layer.feature.properties.MUNIINE;
-                const nom = layer.feature.properties.NOMBRE;
-                const estaVisitat = visitats.includes(featureId);
-
-                layer.bindPopup(`
-                    <b>${nom}</b><br>
-                    Estat: <b>${estaVisitat ? '✔ Visitat' : '❌ Pendent'}</b><br><br>
-                    <button class="popup-btn" onclick="togglePoble('${featureId}')">
-                        ${estaVisitat ? 'Marcar com a pendent' : 'Marcar com a visitat'}
-                    </button>
-                `);
-            });
-
-            actualitzarComptador();
-        };
     </script>
 </body>
 </html>
