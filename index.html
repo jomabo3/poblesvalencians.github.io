@@ -48,6 +48,20 @@
 
         #comptador { margin: 5px 0 0 0; font-size: 0.9rem; color: #d8f3dc; }
         #map { flex-grow: 1; width: 100%; }
+
+        /* Estil per a les etiquetes permanents dels noms dels municipis */
+        .etiqueta-municipi {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid #1b4332;
+            border-radius: 3px;
+            padding: 1px 4px;
+            font-size: 9px;
+            font-weight: bold;
+            color: #1b4332;
+            white-space: nowrap;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+            pointer-events: none; /* CLAU: Permet fer clic al polígon que hi ha davall del text */
+        }
     </style>
 </head>
 <body>
@@ -70,7 +84,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // 1. LLISTA PREDEFINIDA D'AMICS (Pots afegir o canviar els noms ací)
+        // 1. LLISTA PREDEFINIDA D'AMICS (Modifica els noms com vulgues)
         const llistaAmics = ["Pere", "Maria", "Joan", "Anna", "Carlos"];
 
         // Configuració de Proj4js i Mapa
@@ -93,14 +107,13 @@
             selectEl.appendChild(opt);
         });
 
-        // Comprovar si venim d'un enllaç compartit amb dades a la URL (#Pere=46001,46002...)
+        // Carregar dades des de l'enllaç compartit (si existeix)
         function carregarDesDeURL() {
             const hash = window.location.hash.substring(1);
             if (hash && hash.includes('=')) {
                 const [usuariURL, ids] = hash.split('=');
                 if (ids) {
                     const llistaIds = ids.split(',');
-                    // Guardem les dades rebudes per a aquest usuari
                     localStorage.setItem(`pobles_visitats_${usuariURL}`, JSON.stringify(llistaIds));
                     if (llistaAmics.includes(usuariURL)) {
                         usuariActual = usuariURL;
@@ -132,13 +145,12 @@
             const urlCompartir = `${urlBase}#${usuariActual}=${visitats.join(',')}`;
             
             navigator.clipboard.writeText(urlCompartir).then(() => {
-                alert(`S'ha copiat l'enllaç del mapa de ${usuariActual} al teu portapapers!\nAra el pots enviar per WhatsApp.`);
+                alert(`S'ha copiat l'enllaç del mapa de ${usuariActual} al teu portapapers!\nJa el pots enviar.`);
             }).catch(() => {
                 prompt("Copia aquest enllaç manualment:", urlCompartir);
             });
         }
 
-        // Reprojecció de coordenades i estil
         function reprojectarCoordenades(coords) {
             if (typeof coords[0] === 'number') return proj4("EPSG:25830", "EPSG:4326", coords);
             return coords.map(reprojectarCoordenades);
@@ -176,6 +188,13 @@
                         const id = feature.properties.MUNIINE;
                         const nom = feature.properties.NOMBRE;
 
+                        // Mostrar el nom de manera permanent al centre de la geometria
+                        layer.bindTooltip(nom, {
+                            permanent: true,
+                            direction: 'center',
+                            className: 'etiqueta-municipi'
+                        });
+
                         layer.on('click', () => {
                             if (visitats.includes(id)) {
                                 visitats = visitats.filter(item => item !== id);
@@ -185,8 +204,6 @@
                             guardarDadesUsuari();
                             actualitzarMapa();
                         });
-
-                        layer.bindTooltip(() => `<b>${nom}</b>`, { sticky: true });
                     }
                 }).addTo(map);
 
