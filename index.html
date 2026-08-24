@@ -49,18 +49,24 @@
         #comptador { margin: 5px 0 0 0; font-size: 0.9rem; color: #d8f3dc; }
         #map { flex-grow: 1; width: 100%; }
 
-        /* Estil per a les etiquetes permanents dels noms dels municipis */
-        .etiqueta-municipi {
-            background: rgba(255, 255, 255, 0.85);
+        /* Estil per a les etiquetes dels municipis */
+        .leaflet-tooltip.etiqueta-municipi {
+            display: none; /* Amagats per defecte quan s'està lluny */
+            background: rgba(255, 255, 255, 0.9);
             border: 1px solid #1b4332;
             border-radius: 3px;
-            padding: 1px 4px;
-            font-size: 9px;
+            padding: 1px 5px;
+            font-size: 10px;
             font-weight: bold;
             color: #1b4332;
             white-space: nowrap;
-            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
-            pointer-events: none; /* CLAU: Permet fer clic al polígon que hi ha davall del text */
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+            pointer-events: none; /* Permet fer clic al polígon que hi ha davall */
+        }
+
+        /* Quan el mapa té la classe 'mostrar-noms' (zoom prop), es mostren */
+        #map.mostrar-noms .leaflet-tooltip.etiqueta-municipi {
+            display: block;
         }
     </style>
 </head>
@@ -84,8 +90,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <script>
-        // 1. LLISTA PREDEFINIDA D'AMICS (Modifica els noms com vulgues)
-        const llistaAmics = ["Josep", "Mariona", "Usuari3", "Usuari4", "Usuari5"];
+        // 1. LLISTA D'USUARIS DEFINIDA
+        const llistaAmics = ["Josep", "Mariona", "Altres"];
 
         // Configuració de Proj4js i Mapa
         proj4.defs("EPSG:25830", "+proj=utm +zone=30 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
@@ -106,6 +112,20 @@
             if (nom === usuariActual) opt.selected = true;
             selectEl.appendChild(opt);
         });
+
+        // Control de visibilitat dels noms segons el zoom
+        function controlarVisibilitatNoms() {
+            const zoomThreshold = 11; // Nivell de zoom a partir del qual es veuen els noms
+            const mapContainer = document.getElementById('map');
+            
+            if (map.getZoom() >= zoomThreshold) {
+                mapContainer.classList.add('mostrar-noms');
+            } else {
+                mapContainer.classList.remove('mostrar-noms');
+            }
+        }
+
+        map.on('zoomend', controlarVisibilitatNoms);
 
         // Carregar dades des de l'enllaç compartit (si existeix)
         function carregarDesDeURL() {
@@ -188,7 +208,6 @@
                         const id = feature.properties.MUNIINE;
                         const nom = feature.properties.NOMBRE;
 
-                        // Mostrar el nom de manera permanent al centre de la geometria
                         layer.bindTooltip(nom, {
                             permanent: true,
                             direction: 'center',
@@ -211,6 +230,7 @@
                 
                 carregarDesDeURL();
                 carregarDadesUsuari();
+                controlarVisibilitatNoms(); // Comprova la visibilitat inicial
             });
     </script>
 </body>
