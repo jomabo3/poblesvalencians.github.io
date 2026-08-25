@@ -468,3 +468,87 @@ fetch('ca_municipios_20260805.geojson')
         carregarDadesNuvol();
         controlarVisibilitatNoms();
     });
+// Capes base del mapa
+const tileLayers = {
+    classic: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '© OpenStreetMap'
+    }),
+    dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+        maxZoom: 19,
+        attribution: '© CARTO'
+    }),
+    satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 18,
+        attribution: '© Esri'
+    })
+};
+
+// Capa activa per defecte
+let currentTileLayer = tileLayers.classic;
+
+// En inicialitzar el mapa:
+// map = L.map('map').setView([39.48, -0.37], 8);
+// currentTileLayer.addTo(map);
+
+// LÒGICA DELS EVENTES DE CAPES
+document.getElementById('btn-layers-toggle').addEventListener('click', () => {
+    document.getElementById('layers-menu').classList.toggle('hidden');
+});
+
+document.getElementById('btn-close-layers').addEventListener('click', () => {
+    document.getElementById('layers-menu').classList.add('hidden');
+});
+
+// Canviar l'estil del mapa en fer clic en una opció
+document.querySelectorAll('.layer-option').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+        const style = e.currentTarget.getAttribute('data-style');
+
+        // Actualitzar botó actiu visualment
+        document.querySelectorAll('.layer-option').forEach(b => b.classList.remove('active'));
+        e.currentTarget.classList.add('active');
+
+        // Canviar la capa en Leaflet
+        map.removeLayer(currentTileLayer);
+        currentTileLayer = tileLayers[style];
+        currentTileLayer.addTo(map);
+
+        // Si és mode fosc o satèl·lit, pots adaptar opcionalment el color dels municipis visitats/no visitats
+        actualitzarEstilGeoJSON(style);
+
+        document.getElementById('layers-menu').classList.add('hidden');
+    });
+});
+
+// Funció opcional per a ajustar els colors de les línies segons el fons
+function actualitzarEstilGeoJSON(estilMapa) {
+    if (!geojsonLayer) return;
+
+    geojsonLayer.setStyle(feature => {
+        const visitat = dadesGlobals[usuariActual]?.includes(feature.properties.MUNIINE);
+        
+        if (estilMapa === 'dark') {
+            return {
+                fillColor: visitat ? '#00e676' : '#212529',
+                color: visitat ? '#00e676' : '#495057',
+                weight: 0.6,
+                fillOpacity: visitat ? 0.7 : 0.4
+            };
+        } else if (estilMapa === 'satellite') {
+            return {
+                fillColor: visitat ? '#00b4d8' : 'transparent',
+                color: visitat ? '#90e0ef' : '#ffffff',
+                weight: 0.8,
+                fillOpacity: visitat ? 0.45 : 0
+            };
+        } else { // classic
+            return {
+                fillColor: visitat ? '#2d6a4f' : '#adb5bd',
+                color: '#081c15',
+                weight: 0.5,
+                fillOpacity: visitat ? 0.75 : 0.35
+            };
+        }
+    });
+}
