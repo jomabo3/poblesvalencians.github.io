@@ -99,11 +99,7 @@
         .btn-opcio-usuari:hover { background-color: #2d6a4f; }
 
         /* Estils d'Estadístiques */
-        .tabs-container { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 2px solid #e0e0e0; }
-        .tab-btn { flex: 1; background: none; border: none; padding: 8px 10px; font-weight: bold; cursor: pointer; color: #666; border-bottom: 3px solid transparent; }
-        .tab-btn.active { color: #1b4332; border-bottom-color: #1b4332; }
-        
-        .stats-scroll { overflow-y: auto; text-align: left; padding-right: 5px; flex-grow: 1; }
+        .stats-scroll { overflow-y: auto; text-align: left; padding-right: 5px; flex-grow: 1; margin-top: 10px; }
         .stat-card { background: #f8f9fa; padding: 10px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #e0e0e0; }
         .stat-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 6px; font-size: 0.9rem; color: #1b4332; }
         .progress-bg { background: #e0e0e0; height: 12px; border-radius: 6px; overflow: hidden; }
@@ -177,15 +173,10 @@
         </div>
     </div>
 
-    <!-- Modal d'Estadístiques -->
+    <!-- Modal d'Estadístiques per Províncies -->
     <div id="modal-estadistiques" class="modal-overlay" style="display: none;">
         <div class="modal-contingut">
-            <h3 id="titol-estadistiques">Estadístiques</h3>
-            
-            <div class="tabs-container">
-                <button id="tab-provincies" class="tab-btn active" onclick="canviarPestanyaStats('provincies')">Províncies</button>
-                <button id="tab-comarques" class="tab-btn" onclick="canviarPestanyaStats('comarques')">Comarques</button>
-            </div>
+            <h3 id="titol-estadistiques">Estadístiques per Províncies</h3>
 
             <div id="contenidor-stats" class="stats-scroll"></div>
 
@@ -216,7 +207,6 @@
         let modeComparacio = false;
         let dadesComparacio = null;
         let autoritzatPerEditar = false;
-        let pestanyaStatsActual = 'provincies';
 
         // Elements HTML
         const selectEl = document.getElementById('select-usuari');
@@ -356,71 +346,13 @@
             actualitzarMapa();
         }
 
-        /* ----- ESTADÍSTIQUES PER PROVÍNCIA I COMARCA ----- */
+        /* ----- ESTADÍSTIQUES PER PROVÍNCIA ----- */
         function getProvinciaNom(ine) {
             const code = String(ine).padStart(5, '0').substring(0, 2);
             if (code === '03') return 'Alacant';
             if (code === '12') return 'Castelló';
             if (code === '46') return 'València';
             return 'Altres';
-        }
-
-        function getComarcaNom(feature) {
-            const props = feature.properties || {};
-            
-            // 1. Cercar de manera flexible qualsevol camp de comarca al GeoJSON
-            for (let k in props) {
-                const lowerK = k.toLowerCase();
-                if (lowerK.includes('comarc') || lowerK === 'nom_com' || lowerK === 'des_com' || lowerK === 'c_comarca') {
-                    if (props[k] && typeof props[k] === 'string' && props[k].trim() !== '') {
-                        return props[k];
-                    }
-                }
-            }
-
-            // 2. Si el GeoJSON no té propietat de comarca, fem servir la província + interval d'INE
-            const id = String(props.MUNIINE || '').padStart(5, '0');
-            const provCode = id.substring(0, 2);
-            const num = parseInt(id.substring(2), 10);
-
-            // Mapeig aproximat per intervals INE i regions territorials
-            if (provCode === '03') { // Alacant
-                if (num <= 15) return "La Marina Alta";
-                if (num <= 35) return "La Marina Baixa";
-                if (num <= 55) return "L'Alcoià";
-                if (num <= 75) return "El Comtat";
-                if (num <= 95) return "L'Alt Vinalopó";
-                if (num <= 115) return "El Vinalopó Mitjà";
-                if (num <= 125) return "El Baix Vinalopó";
-                if (num <= 135) return "L'Alacantí";
-                return "El Baix Segura";
-            } else if (provCode === '12') { // Castelló
-                if (num <= 20) return "Els Ports";
-                if (num <= 40) return "L'Alt Maestrat";
-                if (num <= 60) return "El Baix Maestrat";
-                if (num <= 80) return "L'Alcalatén";
-                if (num <= 100) return "L'Alt Millars";
-                if (num <= 120) return "L'Alt Palància";
-                if (num <= 130) return "La Plana Alta";
-                return "La Plana Baixa";
-            } else if (provCode === '46') { // València
-                if (id === '46250') return "València Ciutat";
-                if (num <= 25) return "El Rincón de Ademuz";
-                if (num <= 50) return "Els Serrans";
-                if (num <= 75) return "La Plana d'Utiel-Requena";
-                if (num <= 100) return "La Hoya de Buñol";
-                if (num <= 125) return "El Camp de Túria";
-                if (num <= 150) return "El Camp de Morvedre";
-                if (num <= 175) return "L'Horta Nord";
-                if (num <= 200) return "L'Horta Sud";
-                if (num <= 220) return "La Ribera Alta";
-                if (num <= 235) return "La Ribera Baixa";
-                if (num <= 245) return "La Costera";
-                if (num <= 255) return "La Vall d'Albaida";
-                return "La Safor";
-            }
-
-            return `Comarca (${getProvinciaNom(id)})`;
         }
 
         function obrirModalEstadistiques() {
@@ -437,13 +369,6 @@
             document.getElementById('modal-estadistiques').style.display = 'none';
         }
 
-        function canviarPestanyaStats(pestanya) {
-            pestanyaStatsActual = pestanya;
-            document.getElementById('tab-provincies').classList.toggle('active', pestanya === 'provincies');
-            document.getElementById('tab-comarques').classList.toggle('active', pestanya === 'comarques');
-            renderitzarEstadistiques();
-        }
-
         function renderitzarEstadistiques() {
             const visitats = dadesGlobals[usuariActual] || [];
             const contenidor = document.getElementById('contenidor-stats');
@@ -453,13 +378,7 @@
 
             totesLesFeatures.forEach(f => {
                 const id = f.properties.MUNIINE;
-                let clau = '';
-
-                if (pestanyaStatsActual === 'provincies') {
-                    clau = `Província de ${getProvinciaNom(id)}`;
-                } else {
-                    clau = getComarcaNom(f);
-                }
+                const clau = `Província de ${getProvinciaNom(id)}`;
 
                 if (!grups[clau]) {
                     grups[clau] = { total: 0, visitats: 0 };
@@ -471,7 +390,6 @@
                 }
             });
 
-            // Ordenar alfabèticament
             const clausOrdenades = Object.keys(grups).sort((a, b) => a.localeCompare(b));
 
             clausOrdenades.forEach(clau => {
