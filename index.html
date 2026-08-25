@@ -50,6 +50,8 @@
         .btn-secondary:hover { background-color: #2667cc; }
         .btn-success { background-color: #2b9348; }
         .btn-success:hover { background-color: #007200; }
+        .btn-info { background-color: #ffb703; color: #1b4332; }
+        .btn-info:hover { background-color: #fb8500; color: white; }
 
         #comptador { margin: 5px 0 0 0; font-size: 0.9rem; color: #d8f3dc; }
         #map { flex-grow: 1; width: 100%; }
@@ -79,7 +81,8 @@
         }
         .modal-contingut {
             background: white; color: #333; padding: 25px; border-radius: 12px;
-            width: 85%; max-width: 380px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            width: 85%; max-width: 420px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            max-height: 85vh; display: flex; flex-direction: column;
         }
         .modal-contingut h3 { margin-top: 0; color: #1b4332; font-size: 1.3rem; }
         .modal-contingut label { display: block; margin: 10px 0 5px; font-weight: bold; text-align: left; }
@@ -94,6 +97,17 @@
             background-color: #1b4332;
         }
         .btn-opcio-usuari:hover { background-color: #2d6a4f; }
+
+        /* Estils d'Estadístiques */
+        .tabs-container { display: flex; gap: 5px; margin-bottom: 15px; border-bottom: 2px solid #e0e0e0; }
+        .tab-btn { flex: 1; background: none; border: none; padding: 8px 10px; font-weight: bold; cursor: pointer; color: #666; border-bottom: 3px solid transparent; }
+        .tab-btn.active { color: #1b4332; border-bottom-color: #1b4332; }
+        
+        .stats-scroll { overflow-y: auto; text-align: left; padding-right: 5px; flex-grow: 1; }
+        .stat-card { background: #f8f9fa; padding: 10px; margin-bottom: 10px; border-radius: 8px; border: 1px solid #e0e0e0; }
+        .stat-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 6px; font-size: 0.9rem; color: #1b4332; }
+        .progress-bg { background: #e0e0e0; height: 12px; border-radius: 6px; overflow: hidden; }
+        .progress-fill { background: #2d6a4f; height: 100%; transition: width 0.4s ease; }
     </style>
 </head>
 <body>
@@ -134,7 +148,8 @@
             <label for="select-usuari">Usuari: </label>
             <select id="select-usuari" onchange="canviarUsuari()"></select>
             
-            <button class="btn btn-secondary" onclick="obrirModalComparativa()">🔍 Comparar</button>
+            <button class="btn btn-info" onclick="obrirModalEstadistiques()">📊 Estadístiques</button>
+            <button class="btn btn-secondary" onclick="obrirModalComparativa()">🔍 Comparar usuaris</button>
             <button class="btn btn-success" onclick="obrirModalNouUsuari()">➕ Nou usuari</button>
         </div>
 
@@ -162,6 +177,24 @@
         </div>
     </div>
 
+    <!-- Modal d'Estadístiques -->
+    <div id="modal-estadistiques" class="modal-overlay" style="display: none;">
+        <div class="modal-contingut">
+            <h3 id="titol-estadistiques">Estadístiques</h3>
+            
+            <div class="tabs-container">
+                <button id="tab-provincies" class="tab-btn active" onclick="canviarPestanyaStats('provincies')">Províncies</button>
+                <button id="tab-comarques" class="tab-btn" onclick="canviarPestanyaStats('comarques')">Comarques</button>
+            </div>
+
+            <div id="contenidor-stats" class="stats-scroll"></div>
+
+            <div style="margin-top: 15px; text-align: right;">
+                <button class="btn" style="background-color: #6c757d;" onclick="tancarModalEstadistiques()">Tancar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Leaflet JS -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
@@ -175,14 +208,15 @@
 
         let usuariActual = null;
         let dadesGlobals = { "Josep": [], "Mariona": [], "Altres": [] };
-        // CONTRASENYES ACTUALITZADES PER DEFECTE
         let contrasenyesGlobals = { "Josep": "1", "Mariona": "2", "Altres": "3" };
         
         let geojsonLayer = null;
+        let totesLesFeatures = [];
         let totalMunicipis = 0;
         let modeComparacio = false;
         let dadesComparacio = null;
         let autoritzatPerEditar = false;
+        let pestanyaStatsActual = 'provincies';
 
         // Elements HTML
         const selectEl = document.getElementById('select-usuari');
@@ -248,7 +282,7 @@
 
             contrasenyesGlobals[nom] = pass;
             dadesGlobals[nom] = [];
-            autoritzatPerEditar = true; // Autoritzat automàticament en crear-lo
+            autoritzatPerEditar = true;
 
             actualitzarDesplegablesIInterficie();
             tancarModalNouUsuari();
@@ -268,7 +302,7 @@
         }
         map.on('zoomend', controlarVisibilitatNoms);
 
-        // Llegir del núvol
+        // Carregar dades del núvol
         function carregarDadesNuvol() {
             document.getElementById('comptador').innerText = "Sincronitzant amb el núvol...";
             fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -278,7 +312,6 @@
             .then(data => {
                 const rec = data.record || {};
                 
-                // Estructura per a contrasenyes i dades
                 if (rec.pobles) {
                     dadesGlobals = rec.pobles;
                     contrasenyesGlobals = rec.contrasenyes || contrasenyesGlobals;
@@ -295,7 +328,7 @@
             });
         }
 
-        // Enviar al núvol
+        // Guardar al núvol
         function guardarDadesNuvol() {
             document.getElementById('comptador').innerText = "Guardant canvis...";
             
@@ -323,6 +356,90 @@
             actualitzarMapa();
         }
 
+        /* ----- ESTADÍSTIQUES PER PROVÍNCIA I COMARCA ----- */
+        function getProvinciaNom(ine) {
+            const code = String(ine).padStart(5, '0').substring(0, 2);
+            if (code === '03') return 'Alacant';
+            if (code === '12') return 'Castelló';
+            if (code === '46') return 'València';
+            return 'Altres';
+        }
+
+        function getComarcaNom(props) {
+            return props.COMARCA || props.NOM_COM || props.nom_comarca || props.Comarca || props.C_COMARCA || null;
+        }
+
+        function obrirModalEstadistiques() {
+            if (!usuariActual) {
+                alert("Selecciona primer un usuari.");
+                return;
+            }
+            document.getElementById('titol-estadistiques').innerText = `Estadístiques de ${usuariActual}`;
+            document.getElementById('modal-estadistiques').style.display = 'flex';
+            renderitzarEstadistiques();
+        }
+
+        function tancarModalEstadistiques() {
+            document.getElementById('modal-estadistiques').style.display = 'none';
+        }
+
+        function canviarPestanyaStats(pestanya) {
+            pestanyaStatsActual = pestanya;
+            document.getElementById('tab-provincies').classList.toggle('active', pestanya === 'provincies');
+            document.getElementById('tab-comarques').classList.toggle('active', pestanya === 'comarques');
+            renderitzarEstadistiques();
+        }
+
+        function renderitzarEstadistiques() {
+            const visitats = dadesGlobals[usuariActual] || [];
+            const contenidor = document.getElementById('contenidor-stats');
+            contenidor.innerHTML = '';
+
+            const grups = {};
+
+            totesLesFeatures.forEach(f => {
+                const id = f.properties.MUNIINE;
+                let clau = '';
+
+                if (pestanyaStatsActual === 'provincies') {
+                    clau = getProvinciaNom(id);
+                } else {
+                    clau = getComarcaNom(f.properties) || `Província de ${getProvinciaNom(id)}`;
+                }
+
+                if (!grups[clau]) {
+                    grups[clau] = { total: 0, visitats: 0 };
+                }
+
+                grups[clau].total++;
+                if (visitats.includes(id)) {
+                    grups[clau].visitats++;
+                }
+            });
+
+            // Ordenar alfabèticament
+            const clausOrdenades = Object.keys(grups).sort((a, b) => a.localeCompare(b));
+
+            clausOrdenades.forEach(clau => {
+                const item = grups[clau];
+                const pct = Math.round((item.visitats / item.total) * 100) || 0;
+
+                const card = document.createElement('div');
+                card.className = 'stat-card';
+                card.innerHTML = `
+                    <div class="stat-header">
+                        <span>${clau}</span>
+                        <span>${item.visitats} / ${item.total} (${pct}%)</span>
+                    </div>
+                    <div class="progress-bg">
+                        <div class="progress-fill" style="width: ${pct}%;"></div>
+                    </div>
+                `;
+                contenidor.appendChild(card);
+            });
+        }
+
+        /* ----- COMPARATIVA ----- */
         function obrirModalComparativa() {
             document.getElementById('modal-comparativa').style.display = 'flex';
             document.getElementById('resultats-comparativa').innerHTML = '';
@@ -406,6 +523,7 @@
             .then(res => res.json())
             .then(data => {
                 data.features.forEach(f => f.geometry.coordinates = reprojectarCoordenades(f.geometry.coordinates));
+                totesLesFeatures = data.features;
                 totalMunicipis = data.features.length;
 
                 geojsonLayer = L.geoJSON(data, {
