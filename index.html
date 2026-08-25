@@ -120,10 +120,21 @@
     <div id="modal-targeta" class="modal-overlay" style="display: none;">
         <div class="modal-contingut" style="max-width: 420px; align-items: center;">
             <h3 style="align-self: flex-start; margin-bottom: 4px;">Targeta per a compartir</h3>
-            <p style="font-size: 0.8rem; color: #666; align-self: flex-start; margin-top: 0;">Vista prèvia de la imatge:</p>
+            <p style="font-size: 0.8rem; color: #666; align-self: flex-start; margin-top: 0;">Personalitza l'estil abans de descarregar:</p>
+
+            <!-- Selector del Tema de Color -->
+            <div style="width: 100%; margin-bottom: 12px; text-align: left;">
+                <label for="select-card-theme" style="font-size: 0.8rem; font-weight: bold; color: #1b4332;">Estil de color:</label>
+                <select id="select-card-theme" onchange="canviarTemaTargeta(this.value)" style="margin-bottom: 0;">
+                    <option value="verd">🌲 Verd Natural</option>
+                    <option value="blau">🌊 Blau Mediterrani</option>
+                    <option value="taronja">🍊 Taronja Valencià</option>
+                    <option value="fosc">🌑 Mode Fosc</option>
+                </select>
+            </div>
 
             <!-- Targeta generada -->
-            <div id="card-template">
+            <div id="card-template" class="theme-verd">
                 <div class="card-header-title">MAPA D'EXPLORACIÓ</div>
                 <div class="card-user-name" id="card-name">Usuari</div>
 
