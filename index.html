@@ -7,10 +7,13 @@
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Proj4js per a la conversió de coordenades EPSG:25830 -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
+    <!-- html2canvas per a generar la imatge PNG -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <style>
-        body { margin: 0; padding: 0; font-family: system-ui, sans-serif; display: flex; flex-direction: column; height: 100vh; }
+        body { margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; display: flex; flex-direction: column; height: 100vh; }
         #header { background-color: #1b4332; color: white; padding: 12px; text-align: center; z-index: 1000; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
         #header h1 { margin: 0 0 8px 0; font-size: 1.2rem; }
         
@@ -52,6 +55,8 @@
         .btn-success:hover { background-color: #007200; }
         .btn-info { background-color: #ffb703; color: #1b4332; }
         .btn-info:hover { background-color: #fb8500; color: white; }
+        .btn-share { background-color: #7209b7; color: white; }
+        .btn-share:hover { background-color: #560bad; }
 
         #comptador { margin: 5px 0 0 0; font-size: 0.9rem; color: #d8f3dc; }
         #map { flex-grow: 1; width: 100%; }
@@ -72,7 +77,7 @@
         }
         #map.mostrar-noms .leaflet-tooltip.etiqueta-municipi { display: block; }
 
-        /* Modals */
+        /* Modals Generales */
         .modal-overlay {
             display: flex;
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -81,7 +86,7 @@
         }
         .modal-contingut {
             background: white; color: #333; padding: 25px; border-radius: 12px;
-            width: 85%; max-width: 420px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+            width: 85%; max-width: 440px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.4);
             max-height: 85vh; display: flex; flex-direction: column;
         }
         .modal-contingut h3 { margin-top: 0; color: #1b4332; font-size: 1.3rem; }
@@ -104,6 +109,26 @@
         .stat-header { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 6px; font-size: 0.9rem; color: #1b4332; }
         .progress-bg { background: #e0e0e0; height: 12px; border-radius: 6px; overflow: hidden; }
         .progress-fill { background: #2d6a4f; height: 100%; transition: width 0.4s ease; }
+
+        /* Disseny de la Targeta PNG per a compartir */
+        #card-template {
+            width: 440px;
+            background: linear-gradient(135deg, #081c15 0%, #1b4332 50%, #2d6a4f 100%);
+            color: white;
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            text-align: left;
+            box-sizing: border-box;
+        }
+        .card-header-title { font-size: 0.8rem; letter-spacing: 2px; text-transform: uppercase; color: #b7e4c7; margin-bottom: 4px; }
+        .card-user-name { font-size: 1.8rem; font-weight: 800; margin: 0 0 14px 0; color: #ffffff; }
+        .card-prov-title { font-size: 0.85rem; font-weight: 700; color: #b7e4c7; margin: 14px 0 8px 0; text-transform: uppercase; letter-spacing: 1px; }
+        .card-prov-row { margin-bottom: 8px; }
+        .card-prov-info { display: flex; justify-content: space-between; font-size: 0.82rem; font-weight: 600; margin-bottom: 4px; color: #e9ecef; }
+        .card-progress-bg { background: rgba(255, 255, 255, 0.2); height: 8px; border-radius: 4px; overflow: hidden; }
+        .card-progress-fill { background: #74c69d; height: 100%; border-radius: 4px; }
+        .card-footer { margin-top: 18px; padding-top: 10px; border-top: 1px solid rgba(255, 255, 255, 0.15); display: flex; justify-content: space-between; font-size: 0.75rem; color: #b7e4c7; }
     </style>
 </head>
 <body>
@@ -145,6 +170,7 @@
             <select id="select-usuari" onchange="canviarUsuari()"></select>
             
             <button class="btn btn-info" onclick="obrirModalEstadistiques()">📊 Estadístiques</button>
+            <button class="btn btn-share" onclick="obrirModalTargeta()">📸 Compartir Targeta</button>
             <button class="btn btn-secondary" onclick="obrirModalComparativa()">🔍 Comparar usuaris</button>
             <button class="btn btn-success" onclick="obrirModalNouUsuari()">➕ Nou usuari</button>
         </div>
@@ -177,11 +203,51 @@
     <div id="modal-estadistiques" class="modal-overlay" style="display: none;">
         <div class="modal-contingut">
             <h3 id="titol-estadistiques">Estadístiques per Províncies</h3>
-
             <div id="contenidor-stats" class="stats-scroll"></div>
-
             <div style="margin-top: 15px; text-align: right;">
                 <button class="btn" style="background-color: #6c757d;" onclick="tancarModalEstadistiques()">Tancar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de Vista Prèvia de la Targeta PNG amb Mapa -->
+    <div id="modal-targeta" class="modal-overlay" style="display: none;">
+        <div class="modal-contingut" style="max-width: 480px;">
+            <h3>Targeta per a compartir</h3>
+            <p style="font-size: 0.85rem; color: #666; margin-top: -5px; margin-bottom: 15px;">Vista prèvia de la teua imatge amb el mapa:</p>
+
+            <div style="display: flex; justify-content: center; overflow-x: auto; padding: 5px;">
+                <!-- Template HTML que es convertirà en PNG -->
+                <div id="card-template">
+                    <div class="card-header-title">MAPA D'EXPLORACIÓ</div>
+                    <div class="card-user-name" id="card-name">Pere</div>
+
+                    <!-- Contenidor del Mapa integrat -->
+                    <div id="card-map-container" style="position: relative; width: 100%; height: 260px; background: rgba(8, 28, 21, 0.6); border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); margin-bottom: 14px; overflow: hidden;">
+                        <div id="mini-map" style="width: 100%; height: 100%;"></div>
+                        
+                        <!-- Requadre flotant d'estadístiques -->
+                        <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(27, 67, 50, 0.9); backdrop-filter: blur(4px); padding: 8px 12px; border-radius: 10px; border: 1px solid #74c69d; z-index: 1000;">
+                            <div id="card-pct" style="font-size: 1.4rem; font-weight: 900; color: #74c69d; line-height: 1;">0%</div>
+                            <div style="font-size: 0.72rem; font-weight: bold; color: #ffffff; margin-top: 2px;">
+                                <span id="card-visited-count">0</span> / <span id="card-total-count">542</span> pobles
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card-prov-title">Desglossament per província</div>
+                    <div id="card-prov-list"></div>
+
+                    <div class="card-footer">
+                        <span>📍 Comunitat Valenciana</span>
+                        <span>Els meus Pobles Valencians 🗺️</span>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn" style="background-color: #6c757d;" onclick="tancarModalTargeta()">Tancar</button>
+                <button class="btn btn-share" onclick="descarregarImatgeTargeta()">⬇️ Descarregar PNG</button>
             </div>
         </div>
     </div>
@@ -208,7 +274,9 @@
         let dadesComparacio = null;
         let autoritzatPerEditar = false;
 
-        // Elements HTML
+        let miniMap = null;
+        let miniGeojsonLayer = null;
+
         const selectEl = document.getElementById('select-usuari');
         const selectC1 = document.getElementById('comparar-1');
         const selectC2 = document.getElementById('comparar-2');
@@ -292,7 +360,6 @@
         }
         map.on('zoomend', controlarVisibilitatNoms);
 
-        // Carregar dades del núvol
         function carregarDadesNuvol() {
             document.getElementById('comptador').innerText = "Sincronitzant amb el núvol...";
             fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
@@ -318,7 +385,6 @@
             });
         }
 
-        // Guardar al núvol
         function guardarDadesNuvol() {
             document.getElementById('comptador').innerText = "Guardant canvis...";
             
@@ -346,7 +412,6 @@
             actualitzarMapa();
         }
 
-        /* ----- ESTADÍSTIQUES PER PROVÍNCIA ----- */
         function getProvinciaNom(ine) {
             const code = String(ine).padStart(5, '0').substring(0, 2);
             if (code === '03') return 'Alacant';
@@ -355,6 +420,121 @@
             return 'Altres';
         }
 
+        function calcularEstadistiquesUsuari(nom) {
+            const visitats = dadesGlobals[nom] || [];
+            const grups = {};
+
+            totesLesFeatures.forEach(f => {
+                const id = f.properties.MUNIINE;
+                const prov = getProvinciaNom(id);
+
+                if (!grups[prov]) grups[prov] = { total: 0, visitats: 0 };
+                grups[prov].total++;
+                if (visitats.includes(id)) grups[prov].visitats++;
+            });
+
+            return { visitatsCount: visitats.length, grups };
+        }
+
+        /* ----- TARGETA PER A COMPARTIR (PNG) AMB MAPA INTEGRAT ----- */
+        function obrirModalTargeta() {
+            if (!usuariActual) {
+                alert("Selecciona primer un usuari.");
+                return;
+            }
+
+            const stats = calcularEstadistiquesUsuari(usuariActual);
+            const totalPct = Math.round((stats.visitatsCount / totalMunicipis) * 100) || 0;
+
+            document.getElementById('card-name').innerText = usuariActual;
+            document.getElementById('card-pct').innerText = `${totalPct}%`;
+            document.getElementById('card-visited-count').innerText = stats.visitatsCount;
+            document.getElementById('card-total-count').innerText = totalMunicipis;
+
+            const provContainer = document.getElementById('card-prov-list');
+            provContainer.innerHTML = '';
+
+            const provs = Object.keys(stats.grups).sort();
+            provs.forEach(p => {
+                const item = stats.grups[p];
+                const pct = Math.round((item.visitats / item.total) * 100) || 0;
+
+                const row = document.createElement('div');
+                row.className = 'card-prov-row';
+                row.innerHTML = `
+                    <div class="card-prov-info">
+                        <span>Província de ${p}</span>
+                        <span>${item.visitats}/${item.total} (${pct}%)</span>
+                    </div>
+                    <div class="card-progress-bg">
+                        <div class="card-progress-fill" style="width: ${pct}%;"></div>
+                    </div>
+                `;
+                provContainer.appendChild(row);
+            });
+
+            document.getElementById('modal-targeta').style.display = 'flex';
+
+            // Dibuixar el mapa vectorial intern dins la targeta
+            setTimeout(() => {
+                if (!miniMap) {
+                    miniMap = L.map('mini-map', {
+                        zoomControl: false,
+                        attributionControl: false,
+                        dragging: false,
+                        scrollWheelZoom: false,
+                        doubleClickZoom: false,
+                        boxZoom: false,
+                        touchZoom: false
+                    });
+                } else {
+                    miniMap.invalidateSize();
+                }
+
+                if (miniGeojsonLayer) miniMap.removeLayer(miniGeojsonLayer);
+
+                miniGeojsonLayer = L.geoJSON(totesLesFeatures, {
+                    style: function(feature) {
+                        const id = feature.properties.MUNIINE;
+                        const visitats = dadesGlobals[usuariActual] || [];
+                        const estaVisitat = visitats.includes(id);
+                        return {
+                            fillColor: estaVisitat ? '#74c69d' : '#2d6a4f',
+                            weight: 0.5,
+                            color: '#081c15',
+                            fillOpacity: estaVisitat ? 0.95 : 0.35
+                        };
+                    }
+                }).addTo(miniMap);
+
+                miniMap.fitBounds(miniGeojsonLayer.getBounds(), { padding: [5, 5] });
+                miniMap.invalidateSize();
+            }, 200);
+        }
+
+        function tancarModalTargeta() {
+            document.getElementById('modal-targeta').style.display = 'none';
+        }
+
+        function descarregarImatgeTargeta() {
+            const targetaEl = document.getElementById('card-template');
+
+            html2canvas(targetaEl, {
+                scale: 2, // alta resolució per a mòbils i pantalles HD
+                useCORS: true,
+                backgroundColor: null
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = `Pobles_Valencians_${usuariActual}.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => {
+                console.error("Error en generar la imatge:", err);
+                alert("No s'ha pogut generar la imatge.");
+            });
+        }
+
+        /* ----- ESTADÍSTIQUES PER PROVÍNCIA ----- */
         function obrirModalEstadistiques() {
             if (!usuariActual) {
                 alert("Selecciona primer un usuari.");
@@ -370,37 +550,21 @@
         }
 
         function renderitzarEstadistiques() {
-            const visitats = dadesGlobals[usuariActual] || [];
+            const stats = calcularEstadistiquesUsuari(usuariActual);
             const contenidor = document.getElementById('contenidor-stats');
             contenidor.innerHTML = '';
 
-            const grups = {};
-
-            totesLesFeatures.forEach(f => {
-                const id = f.properties.MUNIINE;
-                const clau = `Província de ${getProvinciaNom(id)}`;
-
-                if (!grups[clau]) {
-                    grups[clau] = { total: 0, visitats: 0 };
-                }
-
-                grups[clau].total++;
-                if (visitats.includes(id)) {
-                    grups[clau].visitats++;
-                }
-            });
-
-            const clausOrdenades = Object.keys(grups).sort((a, b) => a.localeCompare(b));
+            const clausOrdenades = Object.keys(stats.grups).sort();
 
             clausOrdenades.forEach(clau => {
-                const item = grups[clau];
+                const item = stats.grups[clau];
                 const pct = Math.round((item.visitats / item.total) * 100) || 0;
 
                 const card = document.createElement('div');
                 card.className = 'stat-card';
                 card.innerHTML = `
                     <div class="stat-header">
-                        <span>${clau}</span>
+                        <span>Província de ${clau}</span>
                         <span>${item.visitats} / ${item.total} (${pct}%)</span>
                     </div>
                     <div class="progress-bg">
