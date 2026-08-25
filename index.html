@@ -365,8 +365,62 @@
             return 'Altres';
         }
 
-        function getComarcaNom(props) {
-            return props.COMARCA || props.NOM_COM || props.nom_comarca || props.Comarca || props.C_COMARCA || null;
+        function getComarcaNom(feature) {
+            const props = feature.properties || {};
+            
+            // 1. Cercar de manera flexible qualsevol camp de comarca al GeoJSON
+            for (let k in props) {
+                const lowerK = k.toLowerCase();
+                if (lowerK.includes('comarc') || lowerK === 'nom_com' || lowerK === 'des_com' || lowerK === 'c_comarca') {
+                    if (props[k] && typeof props[k] === 'string' && props[k].trim() !== '') {
+                        return props[k];
+                    }
+                }
+            }
+
+            // 2. Si el GeoJSON no té propietat de comarca, fem servir la província + interval d'INE
+            const id = String(props.MUNIINE || '').padStart(5, '0');
+            const provCode = id.substring(0, 2);
+            const num = parseInt(id.substring(2), 10);
+
+            // Mapeig aproximat per intervals INE i regions territorials
+            if (provCode === '03') { // Alacant
+                if (num <= 15) return "La Marina Alta";
+                if (num <= 35) return "La Marina Baixa";
+                if (num <= 55) return "L'Alcoià";
+                if (num <= 75) return "El Comtat";
+                if (num <= 95) return "L'Alt Vinalopó";
+                if (num <= 115) return "El Vinalopó Mitjà";
+                if (num <= 125) return "El Baix Vinalopó";
+                if (num <= 135) return "L'Alacantí";
+                return "El Baix Segura";
+            } else if (provCode === '12') { // Castelló
+                if (num <= 20) return "Els Ports";
+                if (num <= 40) return "L'Alt Maestrat";
+                if (num <= 60) return "El Baix Maestrat";
+                if (num <= 80) return "L'Alcalatén";
+                if (num <= 100) return "L'Alt Millars";
+                if (num <= 120) return "L'Alt Palància";
+                if (num <= 130) return "La Plana Alta";
+                return "La Plana Baixa";
+            } else if (provCode === '46') { // València
+                if (id === '46250') return "València Ciutat";
+                if (num <= 25) return "El Rincón de Ademuz";
+                if (num <= 50) return "Els Serrans";
+                if (num <= 75) return "La Plana d'Utiel-Requena";
+                if (num <= 100) return "La Hoya de Buñol";
+                if (num <= 125) return "El Camp de Túria";
+                if (num <= 150) return "El Camp de Morvedre";
+                if (num <= 175) return "L'Horta Nord";
+                if (num <= 200) return "L'Horta Sud";
+                if (num <= 220) return "La Ribera Alta";
+                if (num <= 235) return "La Ribera Baixa";
+                if (num <= 245) return "La Costera";
+                if (num <= 255) return "La Vall d'Albaida";
+                return "La Safor";
+            }
+
+            return `Comarca (${getProvinciaNom(id)})`;
         }
 
         function obrirModalEstadistiques() {
@@ -402,9 +456,9 @@
                 let clau = '';
 
                 if (pestanyaStatsActual === 'provincies') {
-                    clau = getProvinciaNom(id);
+                    clau = `Província de ${getProvinciaNom(id)}`;
                 } else {
-                    clau = getComarcaNom(f.properties) || `Província de ${getProvinciaNom(id)}`;
+                    clau = getComarcaNom(f);
                 }
 
                 if (!grups[clau]) {
