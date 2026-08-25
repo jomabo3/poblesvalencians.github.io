@@ -10,31 +10,33 @@ body {
 #header {
     background-color: #1b4332;
     color: white;
-    padding: 12px;
+    padding: 10px 14px;
     text-align: center;
     z-index: 1000;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
 
 #header h1 {
-    margin: 0 0 8px 0;
-    font-size: 1.2rem;
+    margin: 0 0 6px 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
 }
 
 .controls-container {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 10px;
+    gap: 8px;
     flex-wrap: wrap;
-    margin-bottom: 5px;
+    margin-bottom: 2px;
 }
 
 #select-usuari {
-    padding: 5px 10px;
-    border-radius: 4px;
+    padding: 6px 12px;
+    border-radius: 6px;
     border: 1px solid #ccc;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     font-weight: bold;
     background-color: white;
     color: #1b4332;
@@ -45,15 +47,24 @@ body {
     background-color: #40916c;
     color: white;
     border: none;
-    padding: 8px 14px;
+    padding: 7px 12px;
     border-radius: 6px;
-    font-size: 0.9rem;
-    font-weight: bold;
+    font-size: 0.88rem;
+    font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s;
+    transition: background-color 0.2s, transform 0.1s;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn:hover { background-color: #2d6a4f; }
+.btn-icon {
+    padding: 7px 10px;
+    font-size: 1.1rem;
+    min-width: 38px;
+}
+
 .btn-secondary { background-color: #3a86ff; }
 .btn-secondary:hover { background-color: #2667cc; }
 .btn-success { background-color: #2b9348; }
@@ -64,9 +75,10 @@ body {
 .btn-share:hover { background-color: #560bad; }
 
 #comptador {
-    margin: 5px 0 0 0;
-    font-size: 0.9rem;
+    margin: 4px 0 0 0;
+    font-size: 0.85rem;
     color: #d8f3dc;
+    font-weight: 500;
 }
 
 #map {
@@ -91,6 +103,67 @@ body {
 
 #map.mostrar-noms .leaflet-tooltip.etiqueta-municipi {
     display: block;
+}
+
+/* Selector personalitzat de miniatures de mapa base */
+.layer-picker-control {
+    background: rgba(255, 255, 255, 0.95);
+    padding: 6px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    display: flex;
+    gap: 6px;
+}
+
+.thumb-option {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    padding: 3px;
+    transition: all 0.2s ease;
+}
+
+.thumb-option:hover {
+    background: rgba(0,0,0,0.05);
+}
+
+.thumb-option.selected {
+    border-color: #3a86ff;
+    background: rgba(58, 134, 255, 0.1);
+}
+
+.thumb-box {
+    width: 44px;
+    height: 44px;
+    border-radius: 4px;
+    background-size: cover;
+    background-position: center;
+    box-shadow: inset 0 0 2px rgba(0,0,0,0.5);
+}
+
+.thumb-box.thumb-classic {
+    background-image: linear-gradient(135deg, #e0ebd8, #fbf8f3);
+    border: 1px solid #c0d0b0;
+}
+
+.thumb-box.thumb-dark {
+    background-image: linear-gradient(135deg, #121212, #2c2c2c);
+    border: 1px solid #444;
+}
+
+.thumb-box.thumb-sat {
+    background-image: linear-gradient(135deg, #1b3815, #3b5025);
+    border: 1px solid #224411;
+}
+
+.thumb-label {
+    font-size: 0.65rem;
+    font-weight: bold;
+    color: #333;
+    margin-top: 2px;
 }
 
 /* Modals Generals */
