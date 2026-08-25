@@ -99,7 +99,7 @@ body {
     width: 32px;
 }
 
-/* Format i alineació perfecta de les icones de Google */
+/* Format i alineació de les icones de Google */
 .material-symbols-outlined {
     font-size: 20px;
     line-height: 1;
@@ -111,12 +111,12 @@ body {
     width: 100%;
 }
 
-/* Protecció per a la barra flotant d'Android */
+/* Elevació per a la barra inferior en Android */
 .leaflet-bottom {
     margin-bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
-/* Selector de capes desplaçable */
+/* Selector de capes desplaçable estil Google Maps */
 .gmaps-layer-control {
     position: relative;
 }
@@ -345,25 +345,25 @@ body {
     height: 100%;
 }
 
-/* Targeta PNG */
+/* Targeta PNG - Base */
 #card-template {
     width: 380px;
-    background: linear-gradient(135deg, #081c15 0%, #1b4332 50%, #2d6a4f 100%);
     color: white;
     padding: 18px;
     border-radius: 14px;
     box-sizing: border-box;
     text-align: left;
+    transition: background 0.3s ease;
 }
 
-.card-header-title { font-size: 0.7rem; letter-spacing: 1.5px; color: #b7e4c7; }
+.card-header-title { font-size: 0.7rem; letter-spacing: 1.5px; }
 .card-user-name { font-size: 1.5rem; font-weight: 800; margin: 0 0 10px 0; color: #fff; }
 
 #card-map-container {
     position: relative;
     width: 100%;
     height: 220px;
-    background: rgba(8, 28, 21, 0.6);
+    background: rgba(0, 0, 0, 0.25);
     border-radius: 10px;
     border: 1px solid rgba(255,255,255,0.15);
     margin-bottom: 10px;
@@ -375,21 +375,19 @@ body {
 .card-stats-overlay {
     position: absolute;
     bottom: 8px; left: 8px;
-    background: rgba(27, 67, 50, 0.92);
     padding: 6px 10px;
     border-radius: 8px;
-    border: 1px solid #74c69d;
     z-index: 1000;
 }
 
-#card-pct { font-size: 1.2rem; font-weight: 900; color: #74c69d; line-height: 1; }
+#card-pct { font-size: 1.2rem; font-weight: 900; line-height: 1; }
 .card-count-text { font-size: 0.68rem; font-weight: bold; color: #fff; margin-top: 2px; }
 
-.card-prov-title { font-size: 0.75rem; font-weight: 700; color: #b7e4c7; margin: 10px 0 6px 0; text-transform: uppercase; }
+.card-prov-title { font-size: 0.75rem; font-weight: 700; margin: 10px 0 6px 0; text-transform: uppercase; }
 .card-prov-row { margin-bottom: 6px; }
 .card-prov-info { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 600; margin-bottom: 3px; color: #e9ecef; }
 .card-progress-bg { background: rgba(255, 255, 255, 0.2); height: 6px; border-radius: 3px; overflow: hidden; }
-.card-progress-fill { background: #74c69d; height: 100%; border-radius: 3px; }
+.card-progress-fill { height: 100%; border-radius: 3px; }
 
 .card-footer {
     margin-top: 12px;
@@ -398,8 +396,37 @@ body {
     display: flex;
     justify-content: space-between;
     font-size: 0.7rem;
-    color: #b7e4c7;
 }
+
+/* Temes de Color per a la Targeta */
+
+/* Verd (Predeterminat) */
+#card-template.theme-verd { background: linear-gradient(135deg, #081c15 0%, #1b4332 50%, #2d6a4f 100%); }
+#card-template.theme-verd .card-header-title, #card-template.theme-verd .card-prov-title, #card-template.theme-verd .card-footer { color: #b7e4c7; }
+#card-template.theme-verd .card-stats-overlay { background: rgba(27, 67, 50, 0.92); border: 1px solid #74c69d; }
+#card-template.theme-verd #card-pct { color: #74c69d; }
+#card-template.theme-verd .card-progress-fill { background-color: #74c69d; }
+
+/* Blau Mediterrani */
+#card-template.theme-blau { background: linear-gradient(135deg, #03045e 0%, #0077b6 50%, #00b4d8 100%); }
+#card-template.theme-blau .card-header-title, #card-template.theme-blau .card-prov-title, #card-template.theme-blau .card-footer { color: #caf0f8; }
+#card-template.theme-blau .card-stats-overlay { background: rgba(0, 119, 182, 0.92); border: 1px solid #90e0ef; }
+#card-template.theme-blau #card-pct { color: #90e0ef; }
+#card-template.theme-blau .card-progress-fill { background-color: #90e0ef; }
+
+/* Taronja Valencià */
+#card-template.theme-taronja { background: linear-gradient(135deg, #78281f 0%, #b03a2e 50%, #e67e22 100%); }
+#card-template.theme-taronja .card-header-title, #card-template.theme-taronja .card-prov-title, #card-template.theme-taronja .card-footer { color: #fdebd0; }
+#card-template.theme-taronja .card-stats-overlay { background: rgba(176, 58, 46, 0.92); border: 1px solid #f5b041; }
+#card-template.theme-taronja #card-pct { color: #f5b041; }
+#card-template.theme-taronja .card-progress-fill { background-color: #f5b041; }
+
+/* Mode Fosc */
+#card-template.theme-fosc { background: linear-gradient(135deg, #111111 0%, #222222 50%, #333333 100%); }
+#card-template.theme-fosc .card-header-title, #card-template.theme-fosc .card-prov-title, #card-template.theme-fosc .card-footer { color: #aaaaaa; }
+#card-template.theme-fosc .card-stats-overlay { background: rgba(30, 30, 30, 0.92); border: 1px solid #ffffff; }
+#card-template.theme-fosc #card-pct { color: #ffffff; }
+#card-template.theme-fosc .card-progress-fill { background-color: #ffffff; }
 
 @media (max-width: 480px) {
     #header { padding: 5px 8px; }
