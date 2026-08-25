@@ -225,6 +225,7 @@ function obrirModalTargeta() {
     setTimeout(() => {
         if (!miniMap) {
             miniMap = L.map('mini-map', {
+                preferCanvas: true, // EVITA L'ERROR DE DESPLAÇAMENT EN HTML2CANVAS
                 zoomControl: false,
                 attributionControl: false,
                 dragging: false,
@@ -240,6 +241,7 @@ function obrirModalTargeta() {
         if (miniGeojsonLayer) miniMap.removeLayer(miniGeojsonLayer);
 
         miniGeojsonLayer = L.geoJSON(totesLesFeatures, {
+            renderer: L.canvas(), // FORÇA EL RENDERITZAT DINS DEL CANVAS
             style: function(feature) {
                 const id = feature.properties.MUNIINE;
                 const visitats = dadesGlobals[usuariActual] || [];
@@ -265,10 +267,17 @@ function tancarModalTargeta() {
 function descarregarImatgeTargeta() {
     const targetaEl = document.getElementById('card-template');
 
+    // Recalculem mides abans de capturar
+    if (miniMap && miniGeojsonLayer) {
+        miniMap.invalidateSize();
+        miniMap.fitBounds(miniGeojsonLayer.getBounds(), { padding: [5, 5] });
+    }
+
     html2canvas(targetaEl, {
         scale: 2,
         useCORS: true,
-        backgroundColor: null
+        backgroundColor: null,
+        logging: false
     }).then(canvas => {
         const link = document.createElement('a');
         link.download = `Pobles_Valencians_${usuariActual}.png`;
