@@ -65,7 +65,7 @@ body {
     outline: none;
 }
 
-/* Botons unificats estil Material Translúcid (Opció A) */
+/* Botons unificats estil Material Translúcid */
 .btn {
     background-color: rgba(255, 255, 255, 0.15);
     color: #ffffff;
@@ -97,6 +97,72 @@ body {
     padding: 0;
     min-width: 32px;
     width: 32px;
+}
+
+
+/* Botons de acció i tancament dins dels modals */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+/* Botons de confirmació principals (Com "Crear Usuari") */
+.btn-primary, .btn-opcio-usuari {
+    background-color: #1b4332 !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover, .btn-opcio-usuari:hover {
+    background-color: #2d6a4f !important;
+}
+
+/* Botons secundaris / Cancel·lar / Tancar */
+.btn-secundari {
+    background-color: #6c757d !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.btn-secundari:hover {
+    background-color: #5a6268 !important;
+}
+
+/* Botó de descarregar la targeta */
+#btn-download-card {
+    background-color: #1b4332;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+}
+
+#btn-download-card:hover {
+    background-color: #2d6a4f;
 }
 
 /* Format i alineació perfecta de les icones de Google */
