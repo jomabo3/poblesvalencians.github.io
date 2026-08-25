@@ -1,59 +1,77 @@
 const BIN_ID = '6a8c3388da38895dfe0a5a39';
 const ACCESS_KEY = '$2a$10$jGdGOrUpfifAwZbmhlw1s.H4vmk5XN1Iz7d1DWMsCem.iDNynZmKq';
 
-// Definició de la projecció UTM per al GeoJSON
 proj4.defs("EPSG:25830", "+proj=utm +zone=30 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
 
-// Inicialització del mapa principal
-const map = L.map('map').setView([39.48, -0.37], 8);
+const map = L.map('map', { zoomControl: false }).setView([39.48, -0.37], 8);
+L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-// Capes base de mapa
+// Capes base millorades i estables
 const layers = {
     classic: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+        maxZoom: 19,
         attribution: '&copy; OpenStreetMap' 
     }),
     dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19
+        maxZoom: 19,
+        attribution: '&copy; CARTO'
     }),
-    satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-        attribution: 'Tiles &copy; Esri'
+    sat: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        maxZoom: 18,
+        attribution: '&copy; Esri'
     })
 };
 
 let modeActual = 'classic';
 layers.classic.addTo(map);
 
-// Control personalitzat de miniatures de capes
-const LayerPickerControl = L.Control.extend({
-    options: { position: 'topright' },
+// Control desplegable estil Google Maps a la cantonada inferior esquerra
+const GMapsLayerControl = L.Control.extend({
+    options: { position: 'bottomleft' },
     onAdd: function() {
-        const container = L.DomUtil.create('div', 'layer-picker-control');
+        const container = L.DomUtil.create('div', 'gmaps-layer-control');
         container.innerHTML = `
-            <div class="thumb-option selected" id="opt-classic" onclick="canviarModeMapa('classic')">
-                <div class="thumb-box thumb-classic"></div>
-                <span class="thumb-label">Clàssic</span>
-            </div>
-            <div class="thumb-option" id="opt-dark" onclick="canviarModeMapa('dark')">
-                <div class="thumb-box thumb-dark"></div>
-                <span class="thumb-label">Fosc</span>
-            </div>
-            <div class="thumb-option" id="opt-sat" onclick="canviarModeMapa('sat')">
-                <div class="thumb-box thumb-sat"></div>
-                <span class="thumb-label">Satèl·lit</span>
+            <div class="gmaps-layer-btn" id="gmaps-toggle" title="Canviar vista del mapa">🗺️</div>
+            <div class="gmaps-layer-panel">
+                <div class="thumb-option selected" id="opt-classic" onclick="canviarModeMapa('classic')">
+                    <div class="thumb-box thumb-classic"></div>
+                    <span class="thumb-label">Clàssic</span>
+                </div>
+                <div class="thumb-option" id="opt-dark" onclick="canviarModeMapa('dark')">
+                    <div class="thumb-box thumb-dark"></div>
+                    <span class="thumb-label">Fosc</span>
+                </div>
+                <div class="thumb-option" id="opt-sat" onclick="canviarModeMapa('sat')">
+                    <div class="thumb-box thumb-sat"></div>
+                    <span class="thumb-label">Satèl·lit</span>
+                </div>
             </div>
         `;
+
         L.DomEvent.disableClickPropagation(container);
+
+        const toggleBtn = container.querySelector('#gmaps-toggle');
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            container.classList.toggle('expanded');
+        });
+
+        document.addEventListener('click', () => {
+            container.classList.remove('expanded');
+        });
+
         return container;
     }
 });
-map.addControl(new LayerPickerControl());
+map.addControl(new GMapsLayerControl());
 
 function canviarModeMapa(key) {
     if (modeActual === key) return;
 
-    map.removeLayer(layers[modeActual]);
+    if (map.hasLayer(layers[modeActual])) {
+        map.removeLayer(layers[modeActual]);
+    }
+    
     modeActual = key;
     layers[modeActual].addTo(map);
 
@@ -80,7 +98,6 @@ let autoritzatPerEditar = false;
 let miniMap = null;
 let miniGeojsonLayer = null;
 
-// Elements DOM
 const selectEl = document.getElementById('select-usuari');
 const selectC1 = document.getElementById('comparar-1');
 const selectC2 = document.getElementById('comparar-2');
@@ -165,7 +182,7 @@ function controlarVisibilitatNoms() {
 map.on('zoomend', controlarVisibilitatNoms);
 
 function carregarDadesNuvol() {
-    document.getElementById('comptador').innerText = "Sincronitzant amb el núvol...";
+    document.getElementById('comptador').innerText = "Sincronitzant...";
     fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
         headers: { 'X-Access-Key': ACCESS_KEY }
     })
@@ -185,12 +202,12 @@ function carregarDadesNuvol() {
     })
     .catch(err => {
         console.error("Error carregant dades:", err);
-        document.getElementById('comptador').innerText = "Error en connectar al núvol";
+        document.getElementById('comptador').innerText = "Error de connexió";
     });
 }
 
 function guardarDadesNuvol() {
-    document.getElementById('comptador').innerText = "Guardant canvis...";
+    document.getElementById('comptador').innerText = "Guardant...";
     
     const payload = {
         pobles: dadesGlobals,
@@ -240,7 +257,7 @@ function calcularEstadistiquesUsuari(nom) {
     return { visitatsCount: visitats.length, grups };
 }
 
-/* ----- TARGETA PNG AMB MAPA INTEGRAT ----- */
+/* ----- TARGETA PNG ----- */
 function obrirModalTargeta() {
     if (!usuariActual) {
         alert("Selecciona primer un usuari.");
@@ -313,15 +330,7 @@ function obrirModalTargeta() {
         if (miniGeojsonLayer.getBounds().isValid()) {
             miniMap.fitBounds(miniGeojsonLayer.getBounds(), { padding: [10, 10] });
         }
-        
-        setTimeout(() => {
-            miniMap.invalidateSize();
-            if (miniGeojsonLayer.getBounds().isValid()) {
-                miniMap.fitBounds(miniGeojsonLayer.getBounds(), { padding: [10, 10] });
-            }
-        }, 150);
-
-    }, 150);
+    }, 200);
 }
 
 function tancarModalTargeta() {
@@ -421,7 +430,7 @@ function aplicarComparativa() {
     modeComparacio = true;
 
     document.getElementById('resultats-comparativa').innerHTML = `
-        <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; border: 1px solid #ddd; line-height: 1.8;">
+        <div style="background: #f8f9fa; padding: 8px; border-radius: 5px; border: 1px solid #ddd; line-height: 1.6;">
             <div><span class="color-box" style="background: #2d6a4f;"></span> <b>En comú:</b> ${comu.length} pobles</div>
             <div><span class="color-box" style="background: #3a86ff;"></span> <b>Només ${nom1}:</b> ${sols1.length} pobles</div>
             <div><span class="color-box" style="background: #fb8500;"></span> <b>Només ${nom2}:</b> ${sols2.length} pobles</div>
@@ -430,7 +439,7 @@ function aplicarComparativa() {
 
     if (geojsonLayer) geojsonLayer.setStyle(obtenirEstil);
     document.getElementById('comptador').innerHTML = 
-        `Comparant: <span style="color: #4cc9f0; font-weight: bold;">■ ${nom1}</span> vs <span style="color: #ffb703; font-weight: bold;">■ ${nom2}</span> | En comú: ${comu.length}`;
+        `<span style="color: #4cc9f0; font-weight: bold;">■ ${nom1}</span> vs <span style="color: #ffb703; font-weight: bold;">■ ${nom2}</span> | Comú: ${comu.length}`;
     
     document.getElementById('modal-comparativa').style.display = 'none';
 }
@@ -448,7 +457,6 @@ function obtenirEstil(feature) {
     const visitats = usuariActual ? (dadesGlobals[usuariActual] || []) : [];
     const estaVisitat = visitats.includes(id);
 
-    // Adaptació dinàmica segons el mapa de fons
     if (modeActual === 'classic') {
         return {
             fillColor: estaVisitat ? '#2d6a4f' : '#adb5bd',
@@ -476,7 +484,7 @@ function obtenirEstil(feature) {
 function actualitzarComptador() {
     if (!modeComparacio && usuariActual) {
         const visitats = dadesGlobals[usuariActual] || [];
-        document.getElementById('comptador').innerText = `${usuariActual} ha visitat ${visitats.length} de ${totalMunicipis} pobles`;
+        document.getElementById('comptador').innerText = `${visitats.length}/${totalMunicipis} pobles`;
     }
 }
 
@@ -490,7 +498,6 @@ function reprojectarCoordenades(coords) {
     return coords.map(reprojectarCoordenades);
 }
 
-// Carregar GeoJSON de la Comunitat Valenciana
 fetch('ca_municipios_20260805.geojson')
     .then(res => res.json())
     .then(data => {
@@ -520,7 +527,7 @@ fetch('ca_municipios_20260805.geojson')
                         if (passIngressada === contrasenyesGlobals[usuariActual]) {
                             autoritzatPerEditar = true;
                         } else {
-                            alert("Codi incorrecte. No pots modificar el mapa d'aquesta persona.");
+                            alert("Codi incorrecte.");
                             return;
                         }
                     }
