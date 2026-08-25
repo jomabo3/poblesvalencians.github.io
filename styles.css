@@ -64,34 +64,61 @@ body {
     height: 30px;
 }
 
+/* Botons unificats estil Material Translúcid (Opció A) */
 .btn {
-    background-color: #40916c;
-    color: white;
-    border: none;
-    padding: 4px 8px;
-    border-radius: 4px;
+    background-color: rgba(255, 255, 255, 0.15);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.25);
+    padding: 0 10px;
+    border-radius: 6px;
     font-size: 0.8rem;
-    font-weight: 600;
+    font-weight: 500;
     cursor: pointer;
-    height: 30px;
+    height: 32px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 6px;
     box-sizing: border-box;
+    transition: background-color 0.2s ease, border-color 0.2s ease;
 }
 
-.btn:hover { background-color: #2d6a4f; }
+.btn:hover {
+    background-color: rgba(255, 255, 255, 0.28);
+    border-color: rgba(255, 255, 255, 0.4);
+}
+
+.btn:active {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
 .btn-icon {
     padding: 0;
-    min-width: 30px;
-    width: 30px;
-    font-size: 0.95rem;
+    min-width: 32px;
+    width: 32px;
 }
 
-.btn-secondary { background-color: #3a86ff; }
-.btn-success { background-color: #2b9348; }
-.btn-info { background-color: #ffb703; color: #1b4332; }
-.btn-share { background-color: #7209b7; color: white; }
+/* Format i alineació perfecta de les icones de Google */
+.material-symbols-outlined {
+    font-size: 20px;
+    line-height: 1;
+    display: inline-block;
+}
+
+/* Ajust del selector desplegable per a acompanyar l'estil */
+#select-usuari {
+    flex-grow: 1;
+    padding: 0 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    font-size: 0.82rem;
+    font-weight: 600;
+    background-color: rgba(255, 255, 255, 0.95);
+    color: #1b4332;
+    cursor: pointer;
+    height: 32px;
+    outline: none;
+}
 
 #map {
     flex-grow: 1;
