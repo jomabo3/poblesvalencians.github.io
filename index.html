@@ -2,153 +2,154 @@
 <html lang="ca">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <title>Els meus Pobles Valencians</title>
 
     <!-- Leaflet CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     
-    <!-- Estils propis -->
-    <link rel="stylesheet" href="styles.css" />
-
-    <!-- Icones -->
+    <!-- Google Material Symbols -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0" />
 
-    <!-- Llibreries JavaScript externes -->
+    <!-- Estils propis -->
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Llibreries JavaScript -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
-    <!-- Modal d'inici -->
-    <div id="modal-inicial" class="modal-overlay">
-        <div class="modal-contingut">
-            <h3>Quin mapa vols veure?</h3>
-            <p style="font-size: 0.85rem; color: #666; margin-bottom: 12px;">Selecciona una persona per a començar:</p>
-            <div id="llista-botons-usuaris"></div>
-            <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ccc;">
-            <button class="btn btn-success" style="width: 100%; padding: 8px;" onclick="obrirModalNouUsuari()">➕ Crear nou usuari</button>
-        </div>
-    </div>
-
-    <!-- Modal nou usuari -->
-    <div id="modal-nou-usuari" class="modal-overlay" style="display: none;">
-        <div class="modal-contingut" style="text-align: left;">
-            <h3 style="text-align: center;">Nou Usuari</h3>
-            
-            <label for="input-nom-nou">Nom de l'usuari:</label>
-            <input type="text" id="input-nom-nou" placeholder="Ex: Pere" />
-
-            <label for="input-pass-nou">Codi de seguretat:</label>
-            <input type="password" id="input-pass-nou" placeholder="Ex: 1234" />
-
-            <div style="text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
-                <button class="btn" style="background-color: #6c757d;" onclick="tancarModalNouUsuari()">Cancel·lar</button>
-                <button class="btn btn-success" onclick="crearUsuari()">Guardar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Capçalera principal d'inici -->
+    <!-- Capçalera -->
     <div id="header">
         <div class="header-top">
             <h1>Els meus Pobles Valencians</h1>
-            <p id="comptador">Sincronitzant...</p>
+            <span id="comptador">Carregant...</span>
         </div>
-
         <div class="controls-container">
             <select id="select-usuari" onchange="canviarUsuari()"></select>
+            
             <button class="btn btn-icon" onclick="obrirModalEstadistiques()" title="Estadístiques">
                 <span class="material-symbols-outlined">bar_chart</span>
             </button>
+            
             <button class="btn btn-icon" onclick="obrirModalTargeta()" title="Generar Targeta">
                 <span class="material-symbols-outlined">badge</span>
             </button>
+            
             <button class="btn" onclick="obrirModalComparativa()" title="Comparar usuaris">
                 <span class="material-symbols-outlined">compare_arrows</span>
                 <span>Comparativa</span>
             </button>
+            
             <button class="btn btn-icon" onclick="obrirModalNouUsuari()" title="Afegir nou usuari">
                 <span class="material-symbols-outlined">person_add</span>
             </button>
         </div>
     </div>
 
-    <!-- Contenidor del mapa principal -->
+    <!-- Mapa principal -->
     <div id="map"></div>
 
-    <!-- Modal de Comparativa -->
-    <div id="modal-comparativa" class="modal-overlay" style="display: none;">
-        <div class="modal-contingut" style="text-align: left;">
-            <h3 style="text-align: center;">Comparar Usuaris</h3>
-            <label for="comparar-1">Primer usuari:</label>
-            <select id="comparar-1"></select>
+    <!-- MODALS -->
 
-            <label for="comparar-2">Segon usuari:</label>
-            <select id="comparar-2"></select>
-
-            <div id="resultats-comparativa" style="font-size: 0.85rem; margin-bottom: 12px;"></div>
-
-            <div style="text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
-                <button class="btn" style="background-color: #6c757d;" onclick="eixirComparativa()">Tancar</button>
-                <button class="btn" style="background-color: #2d6a4f;" onclick="aplicarComparativa()">Comparar</button>
+    <!-- Modal Inicial de Selecció -->
+    <div id="modal-inicial" class="modal-overlay">
+        <div class="modal-contingut">
+            <h3>Qui eres?</h3>
+            <p style="font-size: 0.85rem; color: #666; margin-top: -5px;">Selecciona el teu usuari per a començar:</p>
+            <div id="llista-botons-usuaris"></div>
+            <div class="modal-actions" style="margin-top: 15px;">
+                <button class="btn-primary" onclick="obrirModalNouUsuari()" style="width: 100%;">
+                    <span class="material-symbols-outlined">person_add</span>
+                    <span>Crear Nou Usuari</span>
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Modal d'Estadístiques -->
+    <!-- Modal Nou Usuari -->
+    <div id="modal-nou-usuari" class="modal-overlay" style="display: none;">
+        <div class="modal-contingut">
+            <h3>Nou Usuari</h3>
+            <label for="input-nom-nou">Nom de l'usuari:</label>
+            <input type="text" id="input-nom-nou" placeholder="Ex: Pere">
+
+            <label for="input-pass-nou">Codi de seguretat:</label>
+            <input type="password" id="input-pass-nou" placeholder="Ex: 1234">
+
+            <div class="modal-actions">
+                <button class="btn-secundari" onclick="tancarModalNouUsuari()">Cancel·lar</button>
+                <button class="btn-primary" onclick="crearUsuari()">Guardar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Estadístiques -->
     <div id="modal-estadistiques" class="modal-overlay" style="display: none;">
         <div class="modal-contingut">
-            <h3 id="titol-estadistiques">Estadístiques per Províncies</h3>
-            <div id="contenidor-stats" class="stats-scroll"></div>
-            <div style="margin-top: 12px; text-align: right;">
-                <button class="btn" style="background-color: #6c757d;" onclick="tancarModalEstadistiques()">Tancar</button>
+            <h3 id="titol-estadistiques">Estadístiques</h3>
+            <div class="stats-scroll" id="contenidor-stats"></div>
+            <div class="modal-actions">
+                <button class="btn-secundari" onclick="tancarModalEstadistiques()">Tancar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Comparativa -->
+    <div id="modal-comparativa" class="modal-overlay" style="display: none;">
+        <div class="modal-contingut">
+            <h3>Comparar Usuaris</h3>
+            <label for="comparar-1">Usuari 1 (Blau):</label>
+            <select id="comparar-1"></select>
+
+            <label for="comparar-2">Usuari 2 (Taronja):</label>
+            <select id="comparar-2"></select>
+
+            <div id="resultats-comparativa" style="margin-top: 10px;"></div>
+
+            <div class="modal-actions">
+                <button class="btn-secundari" onclick="eixirComparativa()">Tancar</button>
+                <button class="btn-primary" onclick="aplicarComparativa()">Comparar</button>
             </div>
         </div>
     </div>
 
     <!-- Modal Targeta PNG -->
-    <div class="modal-actions">
-        <button class="btn-secundari" onclick="tancarModalTargeta()">Tancar</button>
-        <button id="btn-download-card" onclick="descarregarTargeta()" title="Descarregar imatge">
-            <span class="material-symbols-outlined">download</span>
-            <span>Descarregar</span>
-        </button>
-    </div>
     <div id="modal-targeta" class="modal-overlay" style="display: none;">
-        <div class="modal-contingut" style="max-width: 440px;">
-            <h3>Targeta per a compartir</h3>
-            <p style="font-size: 0.8rem; color: #666; margin-top: -5px; margin-bottom: 10px;">Vista prèvia de la imatge:</p>
+        <div class="modal-contingut" style="max-width: 420px; align-items: center;">
+            <h3 style="align-self: flex-start; margin-bottom: 4px;">Targeta per a compartir</h3>
+            <p style="font-size: 0.8rem; color: #666; align-self: flex-start; margin-top: 0;">Vista prèvia de la imatge:</p>
 
-            <div style="display: flex; justify-content: center; overflow-x: auto; padding: 2px;">
-                <div id="card-template">
-                    <div class="card-header-title">MAPA D'EXPLORACIÓ</div>
-                    <div class="card-user-name" id="card-name">Pere</div>
+            <!-- Targeta generada -->
+            <div id="card-template">
+                <div class="card-header-title">MAPA D'EXPLORACIÓ</div>
+                <div class="card-user-name" id="card-name">Usuari</div>
 
-                    <div id="card-map-container">
-                        <div id="mini-map"></div>
-                        <div class="card-stats-overlay">
-                            <div id="card-pct">0%</div>
-                            <div class="card-count-text">
-                                <span id="card-visited-count">0</span> / <span id="card-total-count">542</span> pobles
-                            </div>
-                        </div>
+                <div id="card-map-container">
+                    <div id="mini-map"></div>
+                    <div class="card-stats-overlay">
+                        <div id="card-pct">0%</div>
+                        <div class="card-count-text"><span id="card-visited-count">0</span> / <span id="card-total-count">0</span> pobles</div>
                     </div>
+                </div>
 
-                    <div class="card-prov-title">Desglossament per província</div>
-                    <div id="card-prov-list"></div>
+                <div class="card-prov-title">DESGLOSSAMENT PER PROVÍNCIA</div>
+                <div id="card-prov-list"></div>
 
-                    <div class="card-footer">
-                        <span>📍 Comunitat Valenciana</span>
-                        <span>Els meus Pobles Valencians 🗺️</span>
-                    </div>
+                <div class="card-footer">
+                    <span>📍 Comunitat Valenciana</span>
+                    <span>Els meus Pobles Valencians 🗺️</span>
                 </div>
             </div>
 
-            <div style="margin-top: 15px; display: flex; gap: 8px; justify-content: flex-end;">
-                <button class="btn" style="background-color: #6c757d;" onclick="tancarModalTargeta()">Tancar</button>
-                <button class="btn btn-share" onclick="descarregarImatgeTargeta()">⬇️ PNG</button>
+            <div class="modal-actions" style="width: 100%; justify-content: space-between; margin-top: 15px;">
+                <button class="btn-secundari" onclick="tancarModalTargeta()">Tancar</button>
+                <button id="btn-download-card" class="btn-primary" onclick="descarregarImatgeTargeta()">
+                    <span class="material-symbols-outlined">download</span>
+                    <span>Descarregar</span>
+                </button>
             </div>
         </div>
     </div>
