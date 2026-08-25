@@ -5,114 +5,132 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
+    overflow: hidden;
 }
 
+/* Capçalera compacta i adaptativa */
 #header {
     background-color: #1b4332;
     color: white;
-    padding: 10px 14px;
-    text-align: center;
+    padding: 6px 10px;
     z-index: 1000;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 #header h1 {
-    margin: 0 0 6px 0;
-    font-size: 1.25rem;
+    margin: 0;
+    font-size: 0.95rem;
     font-weight: 700;
-    letter-spacing: 0.5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#comptador {
+    margin: 0;
+    font-size: 0.75rem;
+    color: #d8f3dc;
+    font-weight: 500;
+    white-space: nowrap;
 }
 
 .controls-container {
     display: flex;
-    justify-content: center;
     align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-bottom: 2px;
+    gap: 6px;
+    width: 100%;
 }
 
 #select-usuari {
-    padding: 6px 12px;
-    border-radius: 6px;
+    flex-grow: 1;
+    padding: 4px 6px;
+    border-radius: 4px;
     border: 1px solid #ccc;
-    font-size: 0.9rem;
+    font-size: 0.82rem;
     font-weight: bold;
     background-color: white;
     color: #1b4332;
     cursor: pointer;
+    height: 30px;
 }
 
 .btn {
     background-color: #40916c;
     color: white;
     border: none;
-    padding: 7px 12px;
-    border-radius: 6px;
-    font-size: 0.88rem;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
     font-weight: 600;
     cursor: pointer;
-    transition: background-color 0.2s, transform 0.1s;
+    height: 30px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
 }
 
 .btn:hover { background-color: #2d6a4f; }
 .btn-icon {
-    padding: 7px 10px;
-    font-size: 1.1rem;
-    min-width: 38px;
+    padding: 0;
+    min-width: 30px;
+    width: 30px;
+    font-size: 0.95rem;
 }
 
 .btn-secondary { background-color: #3a86ff; }
-.btn-secondary:hover { background-color: #2667cc; }
 .btn-success { background-color: #2b9348; }
-.btn-success:hover { background-color: #007200; }
 .btn-info { background-color: #ffb703; color: #1b4332; }
-.btn-info:hover { background-color: #fb8500; color: white; }
 .btn-share { background-color: #7209b7; color: white; }
-.btn-share:hover { background-color: #560bad; }
-
-#comptador {
-    margin: 4px 0 0 0;
-    font-size: 0.85rem;
-    color: #d8f3dc;
-    font-weight: 500;
-}
 
 #map {
     flex-grow: 1;
     width: 100%;
 }
 
-/* Etiquetes dels municipis */
-.leaflet-tooltip.etiqueta-municipi {
-    display: none;
-    background: rgba(255, 255, 255, 0.9);
-    border: 1px solid #1b4332;
-    border-radius: 3px;
-    padding: 1px 5px;
-    font-size: 10px;
-    font-weight: bold;
-    color: #1b4332;
-    white-space: nowrap;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-    pointer-events: none;
+/* Selector de capes desplaçable estil Google Maps */
+.gmaps-layer-control {
+    position: relative;
 }
 
-#map.mostrar-noms .leaflet-tooltip.etiqueta-municipi {
-    display: block;
-}
-
-/* Selector personalitzat de miniatures de mapa base */
-.layer-picker-control {
-    background: rgba(255, 255, 255, 0.95);
-    padding: 6px;
+.gmaps-layer-btn {
+    width: 36px;
+    height: 36px;
+    background: #ffffff;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.3);
     display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    cursor: pointer;
+    border: 2px solid #fff;
+}
+
+.gmaps-layer-panel {
+    display: none;
+    position: absolute;
+    bottom: 42px;
+    left: 0;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(4px);
+    padding: 6px;
+    border-radius: 10px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
     gap: 6px;
+}
+
+.gmaps-layer-control.expanded .gmaps-layer-panel {
+    display: flex;
 }
 
 .thumb-option {
@@ -122,42 +140,25 @@ body {
     cursor: pointer;
     border: 2px solid transparent;
     border-radius: 6px;
-    padding: 3px;
-    transition: all 0.2s ease;
-}
-
-.thumb-option:hover {
-    background: rgba(0,0,0,0.05);
+    padding: 2px;
 }
 
 .thumb-option.selected {
     border-color: #3a86ff;
-    background: rgba(58, 134, 255, 0.1);
+    background: rgba(58, 134, 255, 0.12);
 }
 
 .thumb-box {
-    width: 44px;
-    height: 44px;
-    border-radius: 4px;
+    width: 46px;
+    height: 46px;
+    border-radius: 6px;
     background-size: cover;
     background-position: center;
-    box-shadow: inset 0 0 2px rgba(0,0,0,0.5);
 }
 
-.thumb-box.thumb-classic {
-    background-image: linear-gradient(135deg, #e0ebd8, #fbf8f3);
-    border: 1px solid #c0d0b0;
-}
-
-.thumb-box.thumb-dark {
-    background-image: linear-gradient(135deg, #121212, #2c2c2c);
-    border: 1px solid #444;
-}
-
-.thumb-box.thumb-sat {
-    background-image: linear-gradient(135deg, #1b3815, #3b5025);
-    border: 1px solid #224411;
-}
+.thumb-box.thumb-classic { background-image: linear-gradient(135deg, #e0ebd8, #fbf8f3); border: 1px solid #ccc; }
+.thumb-box.thumb-dark { background-image: linear-gradient(135deg, #121212, #2c2c2c); border: 1px solid #444; }
+.thumb-box.thumb-sat { background-image: linear-gradient(135deg, #1b3815, #3b5025); border: 1px solid #224411; }
 
 .thumb-label {
     font-size: 0.65rem;
@@ -166,13 +167,30 @@ body {
     margin-top: 2px;
 }
 
+/* Etiquetes dels municipis */
+.leaflet-tooltip.etiqueta-municipi {
+    display: none;
+    background: rgba(255, 255, 255, 0.9);
+    border: 1px solid #1b4332;
+    border-radius: 3px;
+    padding: 1px 4px;
+    font-size: 9px;
+    font-weight: bold;
+    color: #1b4332;
+    pointer-events: none;
+}
+
+#map.mostrar-noms .leaflet-tooltip.etiqueta-municipi {
+    display: block;
+}
+
 /* Modals Generals */
 .modal-overlay {
     display: flex;
     position: fixed;
     top: 0; left: 0;
     width: 100%; height: 100%;
-    background: rgba(0,0,0,0.7);
+    background: rgba(0,0,0,0.65);
     z-index: 3000;
     justify-content: center;
     align-items: center;
@@ -181,12 +199,11 @@ body {
 .modal-contingut {
     background: white;
     color: #333;
-    padding: 25px;
-    border-radius: 12px;
-    width: 85%;
-    max-width: 440px;
-    text-align: center;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    padding: 16px;
+    border-radius: 10px;
+    width: 88%;
+    max-width: 400px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     max-height: 85vh;
     display: flex;
     flex-direction: column;
@@ -195,57 +212,47 @@ body {
 .modal-contingut h3 {
     margin-top: 0;
     color: #1b4332;
-    font-size: 1.3rem;
+    font-size: 1.1rem;
 }
 
 .modal-contingut label {
     display: block;
-    margin: 10px 0 5px;
+    margin: 8px 0 4px;
+    font-size: 0.85rem;
     font-weight: bold;
-    text-align: left;
 }
 
 .modal-contingut input, .modal-contingut select {
     width: 100%;
-    padding: 8px;
+    padding: 6px;
     border-radius: 4px;
     border: 1px solid #ccc;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     box-sizing: border-box;
-}
-
-.color-box {
-    display: inline-block;
-    width: 12px;
-    height: 12px;
-    border-radius: 2px;
-    margin-right: 6px;
-    vertical-align: middle;
+    font-size: 0.85rem;
 }
 
 .btn-opcio-usuari {
     width: 100%;
-    padding: 12px;
-    margin-top: 10px;
-    font-size: 1rem;
+    padding: 10px;
+    margin-top: 8px;
+    font-size: 0.9rem;
     background-color: #1b4332;
 }
-.btn-opcio-usuari:hover { background-color: #2d6a4f; }
 
 /* Estadístiques */
 .stats-scroll {
     overflow-y: auto;
     text-align: left;
-    padding-right: 5px;
     flex-grow: 1;
-    margin-top: 10px;
+    margin-top: 8px;
 }
 
 .stat-card {
     background: #f8f9fa;
-    padding: 10px;
-    margin-bottom: 10px;
-    border-radius: 8px;
+    padding: 8px;
+    margin-bottom: 8px;
+    border-radius: 6px;
     border: 1px solid #e0e0e0;
 }
 
@@ -253,90 +260,86 @@ body {
     display: flex;
     justify-content: space-between;
     font-weight: bold;
-    margin-bottom: 6px;
-    font-size: 0.9rem;
+    margin-bottom: 4px;
+    font-size: 0.82rem;
     color: #1b4332;
 }
 
 .progress-bg {
     background: #e0e0e0;
-    height: 12px;
-    border-radius: 6px;
+    height: 10px;
+    border-radius: 5px;
     overflow: hidden;
 }
 
 .progress-fill {
     background: #2d6a4f;
     height: 100%;
-    transition: width 0.4s ease;
 }
 
-/* Targeta PNG */
+/* Targeta PNG amb mini-mapa fix */
 #card-template {
-    width: 440px;
+    width: 380px;
     background: linear-gradient(135deg, #081c15 0%, #1b4332 50%, #2d6a4f 100%);
     color: white;
-    padding: 24px;
-    border-radius: 16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    text-align: left;
+    padding: 18px;
+    border-radius: 14px;
     box-sizing: border-box;
+    text-align: left;
 }
 
-.card-header-title {
-    font-size: 0.8rem;
-    letter-spacing: 2px;
-    text-transform: uppercase;
-    color: #b7e4c7;
-    margin-bottom: 4px;
-}
+.card-header-title { font-size: 0.7rem; letter-spacing: 1.5px; color: #b7e4c7; }
+.card-user-name { font-size: 1.5rem; font-weight: 800; margin: 0 0 10px 0; color: #fff; }
 
-.card-user-name {
-    font-size: 1.8rem;
-    font-weight: 800;
-    margin: 0 0 14px 0;
-    color: #ffffff;
-}
-
-.card-prov-title {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: #b7e4c7;
-    margin: 14px 0 8px 0;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-}
-
-.card-prov-row { margin-bottom: 8px; }
-
-.card-prov-info {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.82rem;
-    font-weight: 600;
-    margin-bottom: 4px;
-    color: #e9ecef;
-}
-
-.card-progress-bg {
-    background: rgba(255, 255, 255, 0.2);
-    height: 8px;
-    border-radius: 4px;
+#card-map-container {
+    position: relative;
+    width: 100%;
+    height: 220px;
+    background: rgba(8, 28, 21, 0.6);
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.15);
+    margin-bottom: 10px;
     overflow: hidden;
 }
 
-.card-progress-fill {
-    background: #74c69d;
-    height: 100%;
-    border-radius: 4px;
+#mini-map { width: 100%; height: 100%; }
+
+.card-stats-overlay {
+    position: absolute;
+    bottom: 8px; left: 8px;
+    background: rgba(27, 67, 50, 0.92);
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid #74c69d;
+    z-index: 1000;
 }
 
+#card-pct { font-size: 1.2rem; font-weight: 900; color: #74c69d; line-height: 1; }
+.card-count-text { font-size: 0.68rem; font-weight: bold; color: #fff; margin-top: 2px; }
+
+.card-prov-title { font-size: 0.75rem; font-weight: 700; color: #b7e4c7; margin: 10px 0 6px 0; text-transform: uppercase; }
+.card-prov-row { margin-bottom: 6px; }
+.card-prov-info { display: flex; justify-content: space-between; font-size: 0.75rem; font-weight: 600; margin-bottom: 3px; color: #e9ecef; }
+.card-progress-bg { background: rgba(255, 255, 255, 0.2); height: 6px; border-radius: 3px; overflow: hidden; }
+.card-progress-fill { background: #74c69d; height: 100%; border-radius: 3px; }
+
 .card-footer {
-    margin-top: 18px;
-    padding-top: 10px;
+    margin-top: 12px;
+    padding-top: 8px;
     border-top: 1px solid rgba(255, 255, 255, 0.15);
     display: flex;
     justify-content: space-between;
-    font-size: 0.75rem;
+    font-size: 0.7rem;
     color: #b7e4c7;
+}
+
+/* Ajustos de mida per a pantalles petites (Mòbil) */
+@media (max-width: 480px) {
+    #header { padding: 5px 8px; }
+    #header h1 { font-size: 0.85rem; }
+    #comptador { font-size: 0.7rem; }
+    .controls-container { gap: 4px; }
+    .btn { font-size: 0.75rem; padding: 3px 6px; height: 28px; }
+    .btn-icon { min-width: 28px; width: 28px; }
+    #select-usuari { height: 28px; font-size: 0.78rem; }
 }
