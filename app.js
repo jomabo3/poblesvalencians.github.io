@@ -6,7 +6,27 @@ proj4.defs("EPSG:25830", "+proj=utm +zone=30 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0
 
 // Inicialització del mapa principal
 const map = L.map('map').setView([39.48, -0.37], 8);
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '&copy; OpenStreetMap' }).addTo(map);
+
+// Capes base de mapa (OpenStreetMap i Topogràfic CartoDB)
+const osmLayer = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
+    attribution: '&copy; OpenStreetMap' 
+});
+
+const topoLayer = L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19
+});
+
+// S'afegeix la capa inicial per defecte
+topoLayer.addTo(map);
+
+// Control de seleccionador de mapa base a dalt a la dreta
+const baseMaps = {
+    "Mapa Topogràfic / Clar": topoLayer,
+    "OpenStreetMap Estàndard": osmLayer
+};
+L.control.layers(baseMaps).addTo(map);
 
 // Variables globals d'estat
 let usuariActual = null;
@@ -225,7 +245,6 @@ function obrirModalTargeta() {
     setTimeout(() => {
         if (!miniMap) {
             miniMap = L.map('mini-map', {
-                preferCanvas: true, // EVITA L'ERROR DE DESPLAÇAMENT EN HTML2CANVAS
                 zoomControl: false,
                 attributionControl: false,
                 dragging: false,
@@ -241,16 +260,15 @@ function obrirModalTargeta() {
         if (miniGeojsonLayer) miniMap.removeLayer(miniGeojsonLayer);
 
         miniGeojsonLayer = L.geoJSON(totesLesFeatures, {
-            renderer: L.canvas(), // FORÇA EL RENDERITZAT DINS DEL CANVAS
             style: function(feature) {
                 const id = feature.properties.MUNIINE;
                 const visitats = dadesGlobals[usuariActual] || [];
                 const estaVisitat = visitats.includes(id);
                 return {
-                    fillColor: estaVisitat ? '#74c69d' : '#2d6a4f',
+                    fillColor: estaVisitat ? '#2b9348' : 'transparent',
                     weight: 0.5,
                     color: '#081c15',
-                    fillOpacity: estaVisitat ? 0.95 : 0.35
+                    fillOpacity: estaVisitat ? 0.85 : 0
                 };
             }
         }).addTo(miniMap);
@@ -267,17 +285,10 @@ function tancarModalTargeta() {
 function descarregarImatgeTargeta() {
     const targetaEl = document.getElementById('card-template');
 
-    // Recalculem mides abans de capturar
-    if (miniMap && miniGeojsonLayer) {
-        miniMap.invalidateSize();
-        miniMap.fitBounds(miniGeojsonLayer.getBounds(), { padding: [5, 5] });
-    }
-
     html2canvas(targetaEl, {
         scale: 2,
         useCORS: true,
-        backgroundColor: null,
-        logging: false
+        backgroundColor: null
     }).then(canvas => {
         const link = document.createElement('a');
         link.download = `Pobles_Valencians_${usuariActual}.png`;
@@ -365,7 +376,7 @@ function aplicarComparativa() {
 
     document.getElementById('resultats-comparativa').innerHTML = `
         <div style="background: #f8f9fa; padding: 10px; border-radius: 5px; border: 1px solid #ddd; line-height: 1.8;">
-            <div><span class="color-box" style="background: #2d6a4f;"></span> <b>En comú:</b> ${comu.length} pobles</div>
+            <div><span class="color-box" style="background: #2b9348;"></span> <b>En comú:</b> ${comu.length} pobles</div>
             <div><span class="color-box" style="background: #3a86ff;"></span> <b>Només ${nom1}:</b> ${sols1.length} pobles</div>
             <div><span class="color-box" style="background: #fb8500;"></span> <b>Només ${nom2}:</b> ${sols2.length} pobles</div>
         </div>
@@ -382,17 +393,18 @@ function obtenirEstil(feature) {
     const id = feature.properties.MUNIINE;
 
     if (modeComparacio && dadesComparacio) {
-        if (dadesComparacio.comu.includes(id)) return { fillColor: '#2d6a4f', weight: 1, color: '#fff', fillOpacity: 0.8 };
-        if (dadesComparacio.sols1.includes(id)) return { fillColor: '#3a86ff', weight: 1, color: '#fff', fillOpacity: 0.75 };
-        if (dadesComparacio.sols2.includes(id)) return { fillColor: '#fb8500', weight: 1, color: '#fff', fillOpacity: 0.75 };
-        return { fillColor: '#adb5bd', weight: 1, color: '#fff', fillOpacity: 0.3 };
+        if (dadesComparacio.comu.includes(id)) return { fillColor: '#2b9348', weight: 1.5, color: '#1b4332', fillOpacity: 0.75 };
+        if (dadesComparacio.sols1.includes(id)) return { fillColor: '#3a86ff', weight: 1.5, color: '#1b4332', fillOpacity: 0.75 };
+        if (dadesComparacio.sols2.includes(id)) return { fillColor: '#fb8500', weight: 1.5, color: '#1b4332', fillOpacity: 0.75 };
+        return { fillColor: 'transparent', weight: 0.8, color: '#666', fillOpacity: 0 };
     } else {
         const visitats = usuariActual ? (dadesGlobals[usuariActual] || []) : [];
         const estaVisitat = visitats.includes(id);
         return {
-            fillColor: estaVisitat ? '#2d6a4f' : '#adb5bd',
-            weight: 1, opacity: 1, color: '#ffffff',
-            fillOpacity: estaVisitat ? 0.75 : 0.4
+            fillColor: estaVisitat ? '#2b9348' : 'transparent',
+            weight: estaVisitat ? 1.5 : 0.8,
+            color: estaVisitat ? '#1b4332' : '#666',
+            fillOpacity: estaVisitat ? 0.75 : 0
         };
     }
 }
