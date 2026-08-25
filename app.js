@@ -241,20 +241,35 @@ function getProvinciaNom(ine) {
     return 'Altres';
 }
 
+function getComarcaNom(feature) {
+    // Si el GeoJSON té la propietat directa de la comarca la fa servir, 
+    // si no, la busca en les propietats estàndard de l'ICV/IGN
+    const p = feature.properties;
+    return p.COMARCA || p.NOM_COMARCA || p.NOMCOMARCA || p.c_comarca || 'Sense Comarca';
+}
+
 function calcularEstadistiquesUsuari(nom) {
     const visitats = dadesGlobals[nom] || [];
-    const grups = {};
+    const provincies = {};
+    const comarques = {};
 
     totesLesFeatures.forEach(f => {
         const id = f.properties.MUNIINE;
         const prov = getProvinciaNom(id);
+        const comarca = getComarcaNom(f);
 
-        if (!grups[prov]) grups[prov] = { total: 0, visitats: 0 };
-        grups[prov].total++;
-        if (visitats.includes(id)) grups[prov].visitats++;
+        // Comptatge per Província
+        if (!provincies[prov]) provincies[prov] = { total: 0, visitats: 0 };
+        provincies[prov].total++;
+        if (visitats.includes(id)) provincies[prov].visitats++;
+
+        // Comptatge per Comarca
+        if (!comarques[comarca]) comarques[comarca] = { total: 0, visitats: 0, prov: prov };
+        comarques[comarca].total++;
+        if (visitats.includes(id)) comarques[comarca].visitats++;
     });
 
-    return { visitatsCount: visitats.length, grups };
+    return { visitatsCount: visitats.length, provincies, comarques };
 }
 
 /* ----- TARGETA PNG I TEMES ----- */
@@ -282,9 +297,9 @@ function obrirModalTargeta() {
     const provContainer = document.getElementById('card-prov-list');
     provContainer.innerHTML = '';
 
-    const provs = Object.keys(stats.grups).sort();
+    const provs = Object.keys(stats.provincies).sort();
     provs.forEach(p => {
-        const item = stats.grups[p];
+        const item = stats.provincies[p];
         const pct = Math.round((item.visitats / item.total) * 100) || 0;
 
         const row = document.createElement('div');
@@ -362,7 +377,7 @@ function descarregarImatgeTargeta() {
     });
 }
 
-/* ----- ESTADÍSTIQUES ----- */
+/* ----- ESTADÍSTIQUES (PROVÍNCIES I COMARQUES) ----- */
 function obrirModalEstadistiques() {
     if (!usuariActual) {
         alert("Selecciona primer un usuari.");
@@ -382,10 +397,15 @@ function renderitzarEstadistiques() {
     const contenidor = document.getElementById('contenidor-stats');
     contenidor.innerHTML = '';
 
-    const clausOrdenades = Object.keys(stats.grups).sort();
+    // 1. SECCIÓ PROVÍNCIES
+    const titolProv = document.createElement('h3');
+    titolProv.style.margin = '10px 0 5px 0';
+    titolProv.innerText = 'Per Províncies';
+    contenidor.appendChild(titolProv);
 
-    clausOrdenades.forEach(clau => {
-        const item = stats.grups[clau];
+    const clausProv = Object.keys(stats.provincies).sort();
+    clausProv.forEach(clau => {
+        const item = stats.provincies[clau];
         const pct = Math.round((item.visitats / item.total) * 100) || 0;
 
         const card = document.createElement('div');
@@ -393,6 +413,31 @@ function renderitzarEstadistiques() {
         card.innerHTML = `
             <div class="stat-header">
                 <span>Província ${clau}</span>
+                <span>${item.visitats} / ${item.total} (${pct}%)</span>
+            </div>
+            <div class="progress-bg">
+                <div class="progress-fill" style="width: ${pct}%;"></div>
+            </div>
+        `;
+        contenidor.appendChild(card);
+    });
+
+    // 2. SECCIÓ COMARQUES
+    const titolCom = document.createElement('h3');
+    titolCom.style.margin = '20px 0 5px 0';
+    titolCom.innerText = 'Per Comarques';
+    contenidor.appendChild(titolCom);
+
+    const clausCom = Object.keys(stats.comarques).sort();
+    clausCom.forEach(clau => {
+        const item = stats.comarques[clau];
+        const pct = Math.round((item.visitats / item.total) * 100) || 0;
+
+        const card = document.createElement('div');
+        card.className = 'stat-card';
+        card.innerHTML = `
+            <div class="stat-header">
+                <span><b>${clau}</b> <small style="opacity:0.7;">(${item.prov})</small></span>
                 <span>${item.visitats} / ${item.total} (${pct}%)</span>
             </div>
             <div class="progress-bg">
