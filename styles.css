@@ -5,11 +5,11 @@ body {
     display: flex;
     flex-direction: column;
     height: 100vh;
-    height: 100dvh; /* Altura dinàmica per a navegadors mòbils */
+    height: 100dvh;
     overflow: hidden;
 }
 
-/* Capçalera compacta i adaptativa */
+/* Capçalera compacta */
 #header {
     background-color: #1b4332;
     color: white;
@@ -65,7 +65,7 @@ body {
     outline: none;
 }
 
-/* Botons unificats estil Material Translúcid */
+/* Botons estil Material Monocromàtic / Translúcid */
 .btn {
     background-color: rgba(255, 255, 255, 0.15);
     color: #ffffff;
@@ -81,7 +81,7 @@ body {
     justify-content: center;
     gap: 6px;
     box-sizing: border-box;
-    transition: background-color 0.2s ease, border-color 0.2s ease;
+    transition: background-color 0.2s, border-color 0.2s;
 }
 
 .btn:hover {
@@ -99,72 +99,6 @@ body {
     width: 32px;
 }
 
-
-/* Botons de acció i tancament dins dels modals */
-.modal-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    margin-top: 15px;
-}
-
-/* Botons de confirmació principals (Com "Crear Usuari") */
-.btn-primary, .btn-opcio-usuari {
-    background-color: #1b4332 !important;
-    color: white !important;
-    border: none !important;
-    padding: 8px 14px;
-    border-radius: 6px;
-    font-weight: 600;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-    transition: background-color 0.2s;
-}
-
-.btn-primary:hover, .btn-opcio-usuari:hover {
-    background-color: #2d6a4f !important;
-}
-
-/* Botons secundaris / Cancel·lar / Tancar */
-.btn-secundari {
-    background-color: #6c757d !important;
-    color: white !important;
-    border: none !important;
-    padding: 8px 14px;
-    border-radius: 6px;
-    font-weight: 500;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s;
-}
-
-.btn-secundari:hover {
-    background-color: #5a6268 !important;
-}
-
-/* Botó de descarregar la targeta */
-#btn-download-card {
-    background-color: #1b4332;
-    color: white;
-    border: none;
-    border-radius: 6px;
-    padding: 8px 12px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-}
-
-#btn-download-card:hover {
-    background-color: #2d6a4f;
-}
-
 /* Format i alineació perfecta de les icones de Google */
 .material-symbols-outlined {
     font-size: 20px;
@@ -177,12 +111,12 @@ body {
     width: 100%;
 }
 
-/* Ajust d'elevació per a tots els controls inferiors de Leaflet (evita la barra d'Android) */
+/* Protecció per a la barra flotant d'Android */
 .leaflet-bottom {
     margin-bottom: calc(16px + env(safe-area-inset-bottom, 0px)) !important;
 }
 
-/* Selector de capes desplaçable estil Google Maps */
+/* Selector de capes desplaçable */
 .gmaps-layer-control {
     position: relative;
 }
@@ -196,7 +130,6 @@ body {
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
     cursor: pointer;
     border: 2px solid #fff;
     color: #1b4332;
@@ -262,7 +195,7 @@ body {
     margin-top: 2px;
 }
 
-/* Etiquetes dels municipis */
+/* Etiquetes municipis */
 .leaflet-tooltip.etiqueta-municipi {
     display: none;
     background: rgba(255, 255, 255, 0.9);
@@ -294,20 +227,21 @@ body {
 .modal-contingut {
     background: white;
     color: #333;
-    padding: 16px;
-    border-radius: 10px;
+    padding: 18px;
+    border-radius: 12px;
     width: 88%;
     max-width: 400px;
     box-shadow: 0 4px 15px rgba(0,0,0,0.3);
     max-height: 85vh;
     display: flex;
     flex-direction: column;
+    box-sizing: border-box;
 }
 
 .modal-contingut h3 {
     margin-top: 0;
     color: #1b4332;
-    font-size: 1.1rem;
+    font-size: 1.15rem;
 }
 
 .modal-contingut label {
@@ -319,22 +253,59 @@ body {
 
 .modal-contingut input, .modal-contingut select {
     width: 100%;
-    padding: 6px;
-    border-radius: 4px;
+    padding: 8px;
+    border-radius: 6px;
     border: 1px solid #ccc;
     margin-bottom: 10px;
     box-sizing: border-box;
     font-size: 0.85rem;
 }
 
-.btn-opcio-usuari {
-    width: 100%;
-    padding: 10px;
-    margin-top: 8px;
-    font-size: 0.9rem;
-    background-color: #1b4332;
-    border: none;
-    color: white;
+/* Botons de acció i tancament dins dels modals */
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    margin-top: 15px;
+}
+
+.btn-primary, .btn-opcio-usuari {
+    background-color: #1b4332 !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    transition: background-color 0.2s;
+}
+
+.btn-primary:hover, .btn-opcio-usuari:hover {
+    background-color: #2d6a4f !important;
+}
+
+.btn-secundari {
+    background-color: #6c757d !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+}
+
+.btn-secundari:hover {
+    background-color: #5a6268 !important;
 }
 
 /* Estadístiques */
@@ -439,7 +410,6 @@ body {
     .btn-icon { min-width: 30px; width: 30px; }
     #select-usuari { height: 30px; font-size: 0.78rem; }
     
-    /* Augmentem la distància de seguretat en mòbils per a la barra flotant d'Android */
     .leaflet-bottom {
         margin-bottom: calc(24px + env(safe-area-inset-bottom, 0px)) !important;
     }
