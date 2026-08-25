@@ -14,7 +14,7 @@ let contrasenyesGlobals = {};
 
 // Configuració de JSONBin.io
 const BIN_ID = "66f7f502ad19ca34f8af4542"; 
-const API_KEY = "$2a$10$wT5HlhA8Bw8L7Zc5VvY3leJ0M6N2W7P4q3r1E0/3M2kG2b4u1E1mG"; // Modifica si utilitzes la teua clau
+const API_KEY = "$2a$10$wT5HlhA8Bw8L7Zc5VvY3leJ0M6N2W7P4q3r1E0/3M2kG2b4u1E1mG";
 
 // Capes de Fons
 const baseLayers = {
@@ -49,8 +49,6 @@ function inicialitzarMapa() {
     });
 
     L.control.zoom({ position: 'topleft' }).addTo(map);
-
-    // Afegir selector personalitzat de capes
     crearControlCapes();
 }
 
@@ -154,7 +152,6 @@ function carregarGeoJSON() {
         .then(data => {
             dadesPobles = data;
             
-            // Re-projectar coordenades UTM a WGS84
             dadesPobles.features.forEach(f => {
                 if (f.geometry.type === "Polygon") {
                     f.geometry.coordinates = f.geometry.coordinates.map(ring => 
@@ -364,9 +361,9 @@ function aplicarComparativa() {
             let color = '#ffffff';
             let fillOp = 0.2;
 
-            if (in1 && in2) { color = '#9b59b6'; fillOp = 0.8; } // Ambdues (Lila)
-            else if (in1) { color = '#3498db'; fillOp = 0.75; }   // Solment U1 (Blau)
-            else if (in2) { color = '#e67e22'; fillOp = 0.75; }   // Solment U2 (Taronja)
+            if (in1 && in2) { color = '#9b59b6'; fillOp = 0.8; }
+            else if (in1) { color = '#3498db'; fillOp = 0.75; }
+            else if (in2) { color = '#e67e22'; fillOp = 0.75; }
 
             return { fillColor: color, weight: 1, opacity: 1, color: '#1b4332', fillOpacity: fillOp };
         }
@@ -393,7 +390,6 @@ function obrirModalTargeta() {
     document.getElementById('card-visited-count').textContent = visitats.length;
     document.getElementById('card-total-count').textContent = total;
 
-    // Poblar llista províncies amb la correcció "Província d'Alacant"
     const provs = {
         "Província d'Alacant": { visitats: 0, total: 0 },
         "Província de Castelló": { visitats: 0, total: 0 },
