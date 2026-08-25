@@ -2,7 +2,7 @@
 <html lang="ca">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Els meus Pobles Valencians</title>
 
     <!-- Leaflet CSS -->
@@ -11,25 +11,25 @@
     <!-- Estils propis -->
     <link rel="stylesheet" href="styles.css" />
 
-    <!-- Llibreries JavaScript externes (CDNs) -->
+    <!-- Llibreries JavaScript externes -->
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.9.0/proj4.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 </head>
 <body>
 
-    <!-- Modal d'inici: Qui eres? -->
+    <!-- Modal d'inici -->
     <div id="modal-inicial" class="modal-overlay">
         <div class="modal-contingut">
             <h3>Quin mapa vols veure?</h3>
-            <p style="font-size: 0.9rem; color: #666; margin-bottom: 15px;">Selecciona una persona per a començar:</p>
+            <p style="font-size: 0.85rem; color: #666; margin-bottom: 12px;">Selecciona una persona per a començar:</p>
             <div id="llista-botons-usuaris"></div>
-            <hr style="margin: 20px 0; border: 0; border-top: 1px solid #ccc;">
-            <button class="btn btn-success" style="width: 100%; padding: 10px;" onclick="obrirModalNouUsuari()">➕ Crear nou usuari</button>
+            <hr style="margin: 15px 0; border: 0; border-top: 1px solid #ccc;">
+            <button class="btn btn-success" style="width: 100%; padding: 8px;" onclick="obrirModalNouUsuari()">➕ Crear nou usuari</button>
         </div>
     </div>
 
-    <!-- Modal per afegir un nou usuari -->
+    <!-- Modal nou usuari -->
     <div id="modal-nou-usuari" class="modal-overlay" style="display: none;">
         <div class="modal-contingut" style="text-align: left;">
             <h3 style="text-align: center;">Nou Usuari</h3>
@@ -37,31 +37,30 @@
             <label for="input-nom-nou">Nom de l'usuari:</label>
             <input type="text" id="input-nom-nou" placeholder="Ex: Pere" />
 
-            <label for="input-pass-nou">Codi de seguretat (per a editar):</label>
+            <label for="input-pass-nou">Codi de seguretat:</label>
             <input type="password" id="input-pass-nou" placeholder="Ex: 1234" />
 
-            <div style="text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
+            <div style="text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
                 <button class="btn" style="background-color: #6c757d;" onclick="tancarModalNouUsuari()">Cancel·lar</button>
-                <button class="btn btn-success" onclick="crearUsuari()">Guardar Usuari</button>
+                <button class="btn btn-success" onclick="crearUsuari()">Guardar</button>
             </div>
         </div>
     </div>
 
-    <!-- Capçalera principal -->
+    <!-- Capçalera principal d'inici -->
     <div id="header">
-        <h1>Els meus Pobles Valencians</h1>
+        <div class="header-top">
+            <h1>Els meus Pobles Valencians</h1>
+            <p id="comptador">Sincronitzant...</p>
+        </div>
         
         <div class="controls-container">
-            <label for="select-usuari">Usuari: </label>
             <select id="select-usuari" onchange="canviarUsuari()"></select>
-            
             <button class="btn btn-info btn-icon" title="Estadístiques" onclick="obrirModalEstadistiques()">📊</button>
             <button class="btn btn-share btn-icon" title="Compartir Targeta" onclick="obrirModalTargeta()">📸</button>
             <button class="btn btn-secondary" onclick="obrirModalComparativa()">🔍 Comparativa</button>
-            <button class="btn btn-success" onclick="obrirModalNouUsuari()">➕ Nou usuari</button>
+            <button class="btn btn-success btn-icon" title="Nou usuari" onclick="obrirModalNouUsuari()">➕</button>
         </div>
-
-        <p id="comptador">Sincronitzant amb el núvol...</p>
     </div>
 
     <!-- Contenidor del mapa principal -->
@@ -77,45 +76,42 @@
             <label for="comparar-2">Segon usuari:</label>
             <select id="comparar-2"></select>
 
-            <div id="resultats-comparativa" style="font-size: 0.9rem; margin-bottom: 15px;"></div>
+            <div id="resultats-comparativa" style="font-size: 0.85rem; margin-bottom: 12px;"></div>
 
-            <div style="text-align: right; display: flex; gap: 10px; justify-content: flex-end;">
-                <button class="btn" style="background-color: #6c757d;" onclick="eixirComparativa()">Tancar / Eixir</button>
+            <div style="text-align: right; display: flex; gap: 8px; justify-content: flex-end;">
+                <button class="btn" style="background-color: #6c757d;" onclick="eixirComparativa()">Tancar</button>
                 <button class="btn" style="background-color: #2d6a4f;" onclick="aplicarComparativa()">Comparar</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal d'Estadístiques per Províncies -->
+    <!-- Modal d'Estadístiques -->
     <div id="modal-estadistiques" class="modal-overlay" style="display: none;">
         <div class="modal-contingut">
             <h3 id="titol-estadistiques">Estadístiques per Províncies</h3>
             <div id="contenidor-stats" class="stats-scroll"></div>
-            <div style="margin-top: 15px; text-align: right;">
+            <div style="margin-top: 12px; text-align: right;">
                 <button class="btn" style="background-color: #6c757d;" onclick="tancarModalEstadistiques()">Tancar</button>
             </div>
         </div>
     </div>
 
-    <!-- Modal de Vista Prèvia de la Targeta PNG amb Mapa -->
+    <!-- Modal Targeta PNG -->
     <div id="modal-targeta" class="modal-overlay" style="display: none;">
-        <div class="modal-contingut" style="max-width: 480px;">
+        <div class="modal-contingut" style="max-width: 440px;">
             <h3>Targeta per a compartir</h3>
-            <p style="font-size: 0.85rem; color: #666; margin-top: -5px; margin-bottom: 15px;">Vista prèvia de la teua imatge amb el mapa:</p>
+            <p style="font-size: 0.8rem; color: #666; margin-top: -5px; margin-bottom: 10px;">Vista prèvia de la imatge:</p>
 
-            <div style="display: flex; justify-content: center; overflow-x: auto; padding: 5px;">
+            <div style="display: flex; justify-content: center; overflow-x: auto; padding: 2px;">
                 <div id="card-template">
                     <div class="card-header-title">MAPA D'EXPLORACIÓ</div>
                     <div class="card-user-name" id="card-name">Pere</div>
 
-                    <!-- Contenidor del Mapa integrat -->
-                    <div id="card-map-container" style="position: relative; width: 100%; height: 260px; background: rgba(8, 28, 21, 0.6); border-radius: 12px; border: 1px solid rgba(255,255,255,0.15); margin-bottom: 14px; overflow: hidden;">
-                        <div id="mini-map" style="width: 100%; height: 100%;"></div>
-                        
-                        <!-- Requadre flotant d'estadístiques -->
-                        <div style="position: absolute; bottom: 10px; left: 10px; background: rgba(27, 67, 50, 0.9); backdrop-filter: blur(4px); padding: 8px 12px; border-radius: 10px; border: 1px solid #74c69d; z-index: 1000;">
-                            <div id="card-pct" style="font-size: 1.4rem; font-weight: 900; color: #74c69d; line-height: 1;">0%</div>
-                            <div style="font-size: 0.72rem; font-weight: bold; color: #ffffff; margin-top: 2px;">
+                    <div id="card-map-container">
+                        <div id="mini-map"></div>
+                        <div class="card-stats-overlay">
+                            <div id="card-pct">0%</div>
+                            <div class="card-count-text">
                                 <span id="card-visited-count">0</span> / <span id="card-total-count">542</span> pobles
                             </div>
                         </div>
@@ -131,14 +127,13 @@
                 </div>
             </div>
 
-            <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+            <div style="margin-top: 15px; display: flex; gap: 8px; justify-content: flex-end;">
                 <button class="btn" style="background-color: #6c757d;" onclick="tancarModalTargeta()">Tancar</button>
-                <button class="btn btn-share" onclick="descarregarImatgeTargeta()">⬇️ Descarregar PNG</button>
+                <button class="btn btn-share" onclick="descarregarImatgeTargeta()">⬇️ PNG</button>
             </div>
         </div>
     </div>
 
-    <!-- Codi de l'aplicació -->
     <script src="app.js"></script>
 </body>
 </html>
