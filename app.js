@@ -1,26 +1,16 @@
-// Projecció UTM 30N (EPSG:25830) per als GeoJSON valencians
-proj4.defs("EPSG:25830", "+proj=utm +zone=30 +ellps=GRS80 +units=m +no_defs");
+const BIN_ID = '6a8c3388da38895dfe0a5a39';
+const ACCESS_KEY = '$2a$10$jGdGOrUpfifAwZbmhlw1s.H4vmk5XN1Iz7d1DWMsCem.iDNynZmKq';
 
-let map;
-let geojsonLayer;
-let miniMap;
-let miniMapGeojsonLayer;
+proj4.defs("EPSG:25830", "+proj=utm +zone=30 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs");
 
-// Variables globals d'estat
-let dadesPobles = null;
-let usuariActual = "";
-let usuarisGlobals = {};
-let contrasenyesGlobals = {};
+const map = L.map('map', { zoomControl: false }).setView([39.48, -0.37], 8);
+L.control.zoom({ position: 'bottomright' }).addTo(map);
 
-// Configuració de JSONBin.io
-const BIN_ID = "66f7f502ad19ca34f8af4542"; 
-const API_KEY = "$2a$10$wT5HlhA8Bw8L7Zc5VvY3leJ0M6N2W7P4q3r1E0/3M2kG2b4u1E1mG";
-
-// Capes de Fons
-const baseLayers = {
-    classic: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+// Capes base millorades i estables
+const layers = {
+    classic: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
         maxZoom: 19,
-        attribution: '&copy; OpenStreetMap'
+        attribution: '&copy; OpenStreetMap' 
     }),
     dark: L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
         maxZoom: 19,
@@ -32,427 +22,322 @@ const baseLayers = {
     })
 };
 
-let capesActuals = baseLayers.classic;
+let modeActual = 'classic';
+layers.classic.addTo(map);
 
-// Inicialització en carregar la pàgina
-document.addEventListener("DOMContentLoaded", () => {
-    inicialitzarMapa();
-    carregarDadesBin();
-});
-
-function inicialitzarMapa() {
-    map = L.map('map', {
-        center: [39.48, -0.4],
-        zoom: 8,
-        zoomControl: false,
-        layers: [capesActuals]
-    });
-
-    L.control.zoom({ position: 'topleft' }).addTo(map);
-    crearControlCapes();
-}
-
-function crearControlCapes() {
-    const layerControl = L.control({ position: 'bottomleft' });
-
-    layerControl.onAdd = function () {
+// Control desplegable estil Google Maps a la cantonada inferior esquerra
+const GMapsLayerControl = L.Control.extend({
+    options: { position: 'bottomleft' },
+    onAdd: function() {
         const container = L.DomUtil.create('div', 'gmaps-layer-control');
         container.innerHTML = `
-            <div class="gmaps-layer-btn" id="gmaps-toggle" title="Canviar vista del mapa">
-                <span class="material-symbols-outlined">layers</span>
-            </div>
+            <div class="gmaps-layer-btn" id="gmaps-toggle" title="Canviar vista del mapa">🗺️</div>
             <div class="gmaps-layer-panel">
                 <div class="thumb-option selected" id="opt-classic" onclick="canviarModeMapa('classic')">
-                    <div class="thumb-box thumb-classic">
-                        <span class="material-symbols-outlined">map</span>
-                    </div>
+                    <div class="thumb-box thumb-classic"></div>
                     <span class="thumb-label">Clàssic</span>
                 </div>
                 <div class="thumb-option" id="opt-dark" onclick="canviarModeMapa('dark')">
-                    <div class="thumb-box thumb-dark">
-                        <span class="material-symbols-outlined">dark_mode</span>
-                    </div>
+                    <div class="thumb-box thumb-dark"></div>
                     <span class="thumb-label">Fosc</span>
                 </div>
                 <div class="thumb-option" id="opt-sat" onclick="canviarModeMapa('sat')">
-                    <div class="thumb-box thumb-sat">
-                        <span class="material-symbols-outlined">satellite_alt</span>
-                    </div>
+                    <div class="thumb-box thumb-sat"></div>
                     <span class="thumb-label">Satèl·lit</span>
                 </div>
             </div>
         `;
 
         L.DomEvent.disableClickPropagation(container);
+
+        const toggleBtn = container.querySelector('#gmaps-toggle');
+        toggleBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            container.classList.toggle('expanded');
+        });
+
+        document.addEventListener('click', () => {
+            container.classList.remove('expanded');
+        });
+
         return container;
-    };
+    }
+});
+map.addControl(new GMapsLayerControl());
 
-    layerControl.addTo(map);
+function canviarModeMapa(key) {
+    if (modeActual === key) return;
 
-    document.addEventListener('click', (e) => {
-        const ctrl = document.querySelector('.gmaps-layer-control');
-        const btn = document.getElementById('gmaps-toggle');
-        if (btn && btn.contains(e.target)) {
-            ctrl.classList.toggle('expanded');
-        } else if (ctrl && !ctrl.contains(e.target)) {
-            ctrl.classList.remove('expanded');
-        }
-    });
-}
-
-function canviarModeMapa(mode) {
-    map.removeLayer(capesActuals);
-    capesActuals = baseLayers[mode];
-    map.addLayer(capesActuals);
+    if (map.hasLayer(layers[modeActual])) {
+        map.removeLayer(layers[modeActual]);
+    }
+    
+    modeActual = key;
+    layers[modeActual].addTo(map);
 
     document.querySelectorAll('.thumb-option').forEach(el => el.classList.remove('selected'));
-    document.getElementById('opt-' + mode).classList.add('selected');
+    if (key === 'classic') document.getElementById('opt-classic').classList.add('selected');
+    if (key === 'dark') document.getElementById('opt-dark').classList.add('selected');
+    if (key === 'sat') document.getElementById('opt-sat').classList.add('selected');
+
+    if (geojsonLayer) geojsonLayer.setStyle(obtenirEstil);
 }
 
-// Carregar dades des de JSONBin
-async function carregarDadesBin() {
-    try {
-        const res = await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
-            headers: { "X-Master-Key": API_KEY }
-        });
-        const json = await res.json();
-        
-        usuarisGlobals = json.record.usuaris || {};
-        contrasenyesGlobals = json.record.contrasenyes || {};
+// Variables globals d'estat
+let usuariActual = null;
+let dadesGlobals = { "Josep": [], "Mariona": [], "Altres": [] };
+let contrasenyesGlobals = { "Josep": "1", "Mariona": "2", "Altres": "3" };
 
-        carregarGeoJSON();
-    } catch (err) {
-        console.error("Error carregant les dades:", err);
-    }
-}
+let geojsonLayer = null;
+let totesLesFeatures = [];
+let totalMunicipis = 0;
+let modeComparacio = false;
+let dadesComparacio = null;
+let autoritzatPerEditar = false;
 
-// Guardar dades a JSONBin
-async function guardarDadesBin() {
-    try {
-        await fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
-            method: 'PUT',
-            headers: {
-                "Content-Type": "application/json",
-                "X-Master-Key": API_KEY
-            },
-            body: JSON.stringify({
-                usuaris: usuarisGlobals,
-                contrasenyes: contrasenyesGlobals
-            })
-        });
-    } catch (err) {
-        console.error("Error guardant a JSONBin:", err);
-    }
-}
+let miniMap = null;
+let miniGeojsonLayer = null;
 
-// Carregador del fitxer GeoJSON dels municipis
-function carregarGeoJSON() {
-    fetch('https://raw.githubusercontent.com/michalsn/es-valencia-geojson/master/valencia-municipios.json')
-        .then(res => res.json())
-        .then(data => {
-            dadesPobles = data;
-            
-            dadesPobles.features.forEach(f => {
-                if (f.geometry.type === "Polygon") {
-                    f.geometry.coordinates = f.geometry.coordinates.map(ring => 
-                        ring.map(coord => proj4("EPSG:25830", "WGS84", coord))
-                    );
-                } else if (f.geometry.type === "MultiPolygon") {
-                    f.geometry.coordinates = f.geometry.coordinates.map(poly => 
-                        poly.map(ring => 
-                            ring.map(coord => proj4("EPSG:25830", "WGS84", coord))
-                        )
-                    );
-                }
-            });
+const selectEl = document.getElementById('select-usuari');
+const selectC1 = document.getElementById('comparar-1');
+const selectC2 = document.getElementById('comparar-2');
+const contenidorBotonsInicials = document.getElementById('llista-botons-usuaris');
 
-            poblarSelectUsuari();
-            obrirModalInicial();
-        });
-}
+function actualitzarDesplegablesIInterficie() {
+    selectEl.innerHTML = '';
+    selectC1.innerHTML = '';
+    selectC2.innerHTML = '';
+    contenidorBotonsInicials.innerHTML = '';
 
-function poblarSelectUsuari() {
-    const sel = document.getElementById('select-usuari');
-    sel.innerHTML = "";
-    Object.keys(usuarisGlobals).forEach(u => {
-        const opt = document.createElement('option');
-        opt.value = u;
-        opt.textContent = u;
-        sel.appendChild(opt);
-    });
-}
+    const llistaNoms = Object.keys(contrasenyesGlobals);
 
-function obrirModalInicial() {
-    const cont = document.getElementById('llista-botons-usuaris');
-    cont.innerHTML = "";
-    
-    Object.keys(usuarisGlobals).forEach(u => {
+    llistaNoms.forEach(nom => {
+        selectEl.add(new Option(nom, nom));
+        selectC1.add(new Option(nom, nom));
+        selectC2.add(new Option(nom, nom));
+
         const btn = document.createElement('button');
-        btn.className = 'btn-opcio-usuari';
-        btn.textContent = u;
-        btn.onclick = () => seleccionarUsuariInicial(u);
-        cont.appendChild(btn);
+        btn.className = 'btn btn-opcio-usuari';
+        btn.innerText = nom;
+        btn.onclick = () => triarUsuariInicial(nom);
+        contenidorBotonsInicials.appendChild(btn);
     });
 
-    document.getElementById('modal-inicial').style.display = 'flex';
+    if (llistaNoms.length > 1) selectC2.value = llistaNoms[1];
+    if (usuariActual) selectEl.value = usuariActual;
 }
 
-function seleccionarUsuariInicial(u) {
-    usuariActual = u;
-    document.getElementById('select-usuari').value = u;
+function triarUsuariInicial(nom) {
+    usuariActual = nom;
+    selectEl.value = nom;
+    autoritzatPerEditar = false;
     document.getElementById('modal-inicial').style.display = 'none';
-    dibuixarMapa();
+    actualitzarMapa();
 }
 
-function canviarUsuari() {
-    usuariActual = document.getElementById('select-usuari').value;
-    dibuixarMapa();
-}
-
-function dibuixarMapa() {
-    if (geojsonLayer) map.removeLayer(geojsonLayer);
-
-    const llistaVisitats = usuarisGlobals[usuariActual] || [];
-
-    geojsonLayer = L.geoJSON(dadesPobles, {
-        style: feature => {
-            const nom = feature.properties.name || feature.properties.LAU2_NAME;
-            const visitat = llistaVisitats.includes(nom);
-            return {
-                fillColor: visitat ? '#2d6a4f' : '#ffffff',
-                weight: 1,
-                opacity: 1,
-                color: '#1b4332',
-                fillOpacity: visitat ? 0.75 : 0.2
-            };
-        },
-        onEachFeature: (feature, layer) => {
-            const nom = feature.properties.name || feature.properties.LAU2_NAME;
-            layer.bindTooltip(nom, { className: 'etiqueta-municipi', permanent: false, direction: 'center' });
-
-            layer.on('click', () => toggleMunicipi(nom));
-        }
-    }).addTo(map);
-
-    actualitzarComptador();
-}
-
-function toggleMunicipi(nom) {
-    if (!usuarisGlobals[usuariActual]) usuarisGlobals[usuariActual] = [];
-    
-    const idx = usuarisGlobals[usuariActual].indexOf(nom);
-    if (idx >= 0) {
-        usuarisGlobals[usuariActual].splice(idx, 1);
-    } else {
-        usuarisGlobals[usuariActual].push(nom);
-    }
-
-    dibuixarMapa();
-    guardarDadesBin();
-}
-
-function actualitzarComptador() {
-    const total = dadesPobles.features.length;
-    const visitats = (usuarisGlobals[usuariActual] || []).length;
-    document.getElementById('comptador').textContent = `${visitats}/${total} pobles`;
-}
-
-// Modals Nou Usuari
 function obrirModalNouUsuari() {
+    document.getElementById('input-nom-nou').value = '';
+    document.getElementById('input-pass-nou').value = '';
     document.getElementById('modal-nou-usuari').style.display = 'flex';
 }
+
 function tancarModalNouUsuari() {
     document.getElementById('modal-nou-usuari').style.display = 'none';
 }
+
 function crearUsuari() {
     const nom = document.getElementById('input-nom-nou').value.trim();
     const pass = document.getElementById('input-pass-nou').value.trim();
 
-    if (!nom) return alert("Introdueix un nom!");
-
-    if (!usuarisGlobals[nom]) {
-        usuarisGlobals[nom] = [];
-        contrasenyesGlobals[nom] = pass || "1234";
-        guardarDadesBin();
+    if (!nom || !pass) {
+        alert("Has d'omplir el nom i la contrasenya.");
+        return;
     }
 
-    poblarSelectUsuari();
-    seleccionarUsuariInicial(nom);
+    if (contrasenyesGlobals[nom]) {
+        alert("Ja existeix un usuari amb aquest nom.");
+        return;
+    }
+
+    contrasenyesGlobals[nom] = pass;
+    dadesGlobals[nom] = [];
+    autoritzatPerEditar = true;
+
+    actualitzarDesplegablesIInterficie();
     tancarModalNouUsuari();
+    
+    usuariActual = nom;
+    selectEl.value = nom;
+    document.getElementById('modal-inicial').style.display = 'none';
+
+    actualitzarMapa();
+    guardarDadesNuvol();
 }
 
-// Modal Estadístiques
-function obrirModalEstadistiques() {
-    const cont = document.getElementById('contenidor-stats');
-    cont.innerHTML = "";
+function controlarVisibilitatNoms() {
+    const mapContainer = document.getElementById('map');
+    if (map.getZoom() >= 11) mapContainer.classList.add('mostrar-noms');
+    else mapContainer.classList.remove('mostrar-noms');
+}
+map.on('zoomend', controlarVisibilitatNoms);
 
-    const provs = {
-        "Província d'Alacant": { visitats: 0, total: 0 },
-        "Província de Castelló": { visitats: 0, total: 0 },
-        "Província de València": { visitats: 0, total: 0 }
+function carregarDadesNuvol() {
+    document.getElementById('comptador').innerText = "Sincronitzant...";
+    fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}/latest`, {
+        headers: { 'X-Access-Key': ACCESS_KEY }
+    })
+    .then(res => res.json())
+    .then(data => {
+        const rec = data.record || {};
+        
+        if (rec.pobles) {
+            dadesGlobals = rec.pobles;
+            contrasenyesGlobals = rec.contrasenyes || contrasenyesGlobals;
+        } else {
+            dadesGlobals = rec;
+        }
+
+        actualitzarDesplegablesIInterficie();
+        if (usuariActual) actualitzarMapa();
+    })
+    .catch(err => {
+        console.error("Error carregant dades:", err);
+        document.getElementById('comptador').innerText = "Error de connexió";
+    });
+}
+
+function guardarDadesNuvol() {
+    document.getElementById('comptador').innerText = "Guardant...";
+    
+    const payload = {
+        pobles: dadesGlobals,
+        contrasenyes: contrasenyesGlobals
     };
 
-    const visitats = usuarisGlobals[usuariActual] || [];
+    fetch(`https://api.jsonbin.io/v3/b/${BIN_ID}`, {
+        method: 'PUT',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Access-Key': ACCESS_KEY
+        },
+        body: JSON.stringify(payload)
+    })
+    .then(() => actualitzarComptador())
+    .catch(err => console.error("Error guardant:", err));
+}
 
-    dadesPobles.features.forEach(f => {
-        const nomProv = f.properties.provincia || f.properties.PROV_NAME || "Província de València";
-        let clau = "Província de València";
-        if (nomProv.includes("Alacant") || nomProv.includes("Alicante")) clau = "Província d'Alacant";
-        if (nomProv.includes("Castelló") || nomProv.includes("Castellón")) clau = "Província de Castelló";
+function canviarUsuari() {
+    modeComparacio = false;
+    usuariActual = selectEl.value;
+    autoritzatPerEditar = false;
+    actualitzarMapa();
+}
 
-        provs[clau].total++;
-        const nomPoble = f.properties.name || f.properties.LAU2_NAME;
-        if (visitats.includes(nomPoble)) provs[clau].visitats++;
+function getProvinciaNom(ine) {
+    const code = String(ine).padStart(5, '0').substring(0, 2);
+    if (code === '03') return "d'Alacant";
+    if (code === '12') return 'de Castelló';
+    if (code === '46') return 'de València';
+    return 'Altres';
+}
+
+function calcularEstadistiquesUsuari(nom) {
+    const visitats = dadesGlobals[nom] || [];
+    const grups = {};
+
+    totesLesFeatures.forEach(f => {
+        const id = f.properties.MUNIINE;
+        const prov = getProvinciaNom(id);
+
+        if (!grups[prov]) grups[prov] = { total: 0, visitats: 0 };
+        grups[prov].total++;
+        if (visitats.includes(id)) grups[prov].visitats++;
     });
 
-    Object.keys(provs).forEach(p => {
-        const pct = Math.round((provs[p].visitats / (provs[p].total || 1)) * 100);
-        cont.innerHTML += `
-            <div class="stat-card">
-                <div class="stat-header">
-                    <span>${p}</span>
-                    <span>${provs[p].visitats}/${provs[p].total} (${pct}%)</span>
-                </div>
-                <div class="progress-bg">
-                    <div class="progress-fill" style="width: ${pct}%;"></div>
-                </div>
-            </div>
-        `;
-    });
-
-    document.getElementById('modal-estadistiques').style.display = 'flex';
-}
-function tancarModalEstadistiques() {
-    document.getElementById('modal-estadistiques').style.display = 'none';
+    return { visitatsCount: visitats.length, grups };
 }
 
-// Modal Comparativa
-function obrirModalComparativa() {
-    const s1 = document.getElementById('comparar-1');
-    const s2 = document.getElementById('comparar-2');
-    s1.innerHTML = ""; s2.innerHTML = "";
-
-    Object.keys(usuarisGlobals).forEach(u => {
-        s1.innerHTML += `<option value="${u}">${u}</option>`;
-        s2.innerHTML += `<option value="${u}">${u}</option>`;
-    });
-
-    document.getElementById('modal-comparativa').style.display = 'flex';
-}
-function eixirComparativa() {
-    document.getElementById('modal-comparativa').style.display = 'none';
-    dibuixarMapa();
-}
-function aplicarComparativa() {
-    const u1 = document.getElementById('comparar-1').value;
-    const u2 = document.getElementById('comparar-2').value;
-
-    const list1 = usuarisGlobals[u1] || [];
-    const list2 = usuarisGlobals[u2] || [];
-
-    if (geojsonLayer) map.removeLayer(geojsonLayer);
-
-    geojsonLayer = L.geoJSON(dadesPobles, {
-        style: feature => {
-            const nom = feature.properties.name || feature.properties.LAU2_NAME;
-            const in1 = list1.includes(nom);
-            const in2 = list2.includes(nom);
-
-            let color = '#ffffff';
-            let fillOp = 0.2;
-
-            if (in1 && in2) { color = '#9b59b6'; fillOp = 0.8; }
-            else if (in1) { color = '#3498db'; fillOp = 0.75; }
-            else if (in2) { color = '#e67e22'; fillOp = 0.75; }
-
-            return { fillColor: color, weight: 1, opacity: 1, color: '#1b4332', fillOpacity: fillOp };
-        }
-    }).addTo(map);
-
-    document.getElementById('modal-comparativa').style.display = 'none';
-}
-
-// Targeta PNG i Canvi de Tema
+/* ----- TARGETA PNG I TEMES ----- */
 function canviarTemaTargeta(tema) {
     const card = document.getElementById('card-template');
-    card.className = 'theme-' + tema;
+    if (card) {
+        card.className = 'theme-' + tema;
+    }
 }
 
 function obrirModalTargeta() {
-    document.getElementById('modal-targeta').style.display = 'flex';
-    document.getElementById('card-name').textContent = usuariActual;
+    if (!usuariActual) {
+        alert("Selecciona primer un usuari.");
+        return;
+    }
 
-    const visitats = usuarisGlobals[usuariActual] || [];
-    const total = dadesPobles.features.length;
-    const pctGlobal = Math.round((visitats.length / total) * 100);
+    const stats = calcularEstadistiquesUsuari(usuariActual);
+    const totalPct = Math.round((stats.visitatsCount / totalMunicipis) * 100) || 0;
 
-    document.getElementById('card-pct').textContent = pctGlobal + "%";
-    document.getElementById('card-visited-count').textContent = visitats.length;
-    document.getElementById('card-total-count').textContent = total;
+    document.getElementById('card-name').innerText = usuariActual;
+    document.getElementById('card-pct').innerText = `${totalPct}%`;
+    document.getElementById('card-visited-count').innerText = stats.visitatsCount;
+    document.getElementById('card-total-count').innerText = totalMunicipis;
 
-    const provs = {
-        "Província d'Alacant": { visitats: 0, total: 0 },
-        "Província de Castelló": { visitats: 0, total: 0 },
-        "Província de València": { visitats: 0, total: 0 }
-    };
+    const provContainer = document.getElementById('card-prov-list');
+    provContainer.innerHTML = '';
 
-    dadesPobles.features.forEach(f => {
-        const nomProv = f.properties.provincia || f.properties.PROV_NAME || "Província de València";
-        let clau = "Província de València";
-        if (nomProv.includes("Alacant") || nomProv.includes("Alicante")) clau = "Província d'Alacant";
-        if (nomProv.includes("Castelló") || nomProv.includes("Castellón")) clau = "Província de Castelló";
+    const provs = Object.keys(stats.grups).sort();
+    provs.forEach(p => {
+        const item = stats.grups[p];
+        const pct = Math.round((item.visitats / item.total) * 100) || 0;
 
-        provs[clau].total++;
-        const nomPoble = f.properties.name || f.properties.LAU2_NAME;
-        if (visitats.includes(nomPoble)) provs[clau].visitats++;
-    });
-
-    const cont = document.getElementById('card-prov-list');
-    cont.innerHTML = "";
-    Object.keys(provs).forEach(p => {
-        const pct = Math.round((provs[p].visitats / (provs[p].total || 1)) * 100);
-        cont.innerHTML += `
-            <div class="card-prov-row">
-                <div class="card-prov-info">
-                    <span>${p}</span>
-                    <span>${provs[p].visitats}/${provs[p].total} (${pct}%)</span>
-                </div>
-                <div class="card-progress-bg">
-                    <div class="card-progress-fill" style="width: ${pct}%;"></div>
-                </div>
+        const row = document.createElement('div');
+        row.className = 'card-prov-row';
+        row.innerHTML = `
+            <div class="card-prov-info">
+                <span>Província ${p}</span>
+                <span>${item.visitats}/${item.total} (${pct}%)</span>
+            </div>
+            <div class="card-progress-bg">
+                <div class="card-progress-fill" style="width: ${pct}%;"></div>
             </div>
         `;
+        provContainer.appendChild(row);
     });
 
-    setTimeout(generarMiniMapaTargeta, 150);
-}
+    document.getElementById('modal-targeta').style.display = 'flex';
 
-function generarMiniMapaTargeta() {
-    if (miniMap) miniMap.remove();
-
-    miniMap = L.map('mini-map', {
-        zoomControl: false,
-        dragging: false,
-        scrollWheelZoom: false,
-        attributionControl: false
-    });
-
-    const llistaVisitats = usuarisGlobals[usuariActual] || [];
-
-    miniMapGeojsonLayer = L.geoJSON(dadesPobles, {
-        style: feature => {
-            const nom = feature.properties.name || feature.properties.LAU2_NAME;
-            const visitat = llistaVisitats.includes(nom);
-            return {
-                fillColor: visitat ? '#74c69d' : 'transparent',
-                weight: 0.5,
-                color: 'rgba(255,255,255,0.4)',
-                fillOpacity: visitat ? 0.85 : 0
-            };
+    setTimeout(() => {
+        if (!miniMap) {
+            miniMap = L.map('mini-map', {
+                zoomControl: false,
+                attributionControl: false,
+                dragging: false,
+                scrollWheelZoom: false,
+                doubleClickZoom: false,
+                boxZoom: false,
+                touchZoom: false
+            });
         }
-    }).addTo(miniMap);
 
-    miniMap.fitBounds(miniMapGeojsonLayer.getBounds(), { padding: [2, 2] });
+        miniMap.invalidateSize();
+
+        if (miniGeojsonLayer) miniMap.removeLayer(miniGeojsonLayer);
+
+        miniGeojsonLayer = L.geoJSON(totesLesFeatures, {
+            style: function(feature) {
+                const id = feature.properties.MUNIINE;
+                const visitats = dadesGlobals[usuariActual] || [];
+                const estaVisitat = visitats.includes(id);
+                return {
+                    fillColor: estaVisitat ? '#74c69d' : '#2d6a4f',
+                    weight: 0.5,
+                    color: '#081c15',
+                    fillOpacity: estaVisitat ? 0.95 : 0.35
+                };
+            }
+        }).addTo(miniMap);
+
+        if (miniGeojsonLayer.getBounds().isValid()) {
+            miniMap.fitBounds(miniGeojsonLayer.getBounds(), { padding: [10, 10] });
+        }
+    }, 200);
 }
 
 function tancarModalTargeta() {
@@ -460,11 +345,216 @@ function tancarModalTargeta() {
 }
 
 function descarregarImatgeTargeta() {
-    const card = document.getElementById('card-template');
-    html2canvas(card, { scale: 2 }).then(canvas => {
+    const targetaEl = document.getElementById('card-template');
+
+    html2canvas(targetaEl, {
+        scale: 2,
+        useCORS: true,
+        backgroundColor: null
+    }).then(canvas => {
         const link = document.createElement('a');
-        link.download = `pobles-${usuariActual}.png`;
-        link.href = canvas.toDataURL();
+        link.download = `Pobles_Valencians_${usuariActual}.png`;
+        link.href = canvas.toDataURL('image/png');
         link.click();
+    }).catch(err => {
+        console.error("Error en generar la imatge:", err);
+        alert("No s'ha pogut generar la imatge.");
     });
 }
+
+/* ----- ESTADÍSTIQUES ----- */
+function obrirModalEstadistiques() {
+    if (!usuariActual) {
+        alert("Selecciona primer un usuari.");
+        return;
+    }
+    document.getElementById('titol-estadistiques').innerText = `Estadístiques de ${usuariActual}`;
+    document.getElementById('modal-estadistiques').style.display = 'flex';
+    renderitzarEstadistiques();
+}
+
+function tancarModalEstadistiques() {
+    document.getElementById('modal-estadistiques').style.display = 'none';
+}
+
+function renderitzarEstadistiques() {
+    const stats = calcularEstadistiquesUsuari(usuariActual);
+    const contenidor = document.getElementById('contenidor-stats');
+    contenidor.innerHTML = '';
+
+    const clausOrdenades = Object.keys(stats.grups).sort();
+
+    clausOrdenades.forEach(clau => {
+        const item = stats.grups[clau];
+        const pct = Math.round((item.visitats / item.total) * 100) || 0;
+
+        const card = document.createElement('div');
+        card.className = 'stat-card';
+        card.innerHTML = `
+            <div class="stat-header">
+                <span>Província ${clau}</span>
+                <span>${item.visitats} / ${item.total} (${pct}%)</span>
+            </div>
+            <div class="progress-bg">
+                <div class="progress-fill" style="width: ${pct}%;"></div>
+            </div>
+        `;
+        contenidor.appendChild(card);
+    });
+}
+
+/* ----- COMPARATIVA ----- */
+function obrirModalComparativa() {
+    document.getElementById('modal-comparativa').style.display = 'flex';
+    document.getElementById('resultats-comparativa').innerHTML = '';
+}
+
+function eixirComparativa() {
+    document.getElementById('modal-comparativa').style.display = 'none';
+    if (modeComparacio) {
+        modeComparacio = false;
+        actualitzarMapa();
+    }
+}
+
+function aplicarComparativa() {
+    const nom1 = selectC1.value;
+    const nom2 = selectC2.value;
+
+    if (nom1 === nom2) {
+        alert("Has de seleccionar dos usuaris diferents.");
+        return;
+    }
+
+    const arr1 = dadesGlobals[nom1] || [];
+    const arr2 = dadesGlobals[nom2] || [];
+
+    const comu = arr1.filter(id => arr2.includes(id));
+    const sols1 = arr1.filter(id => !arr2.includes(id));
+    const sols2 = arr2.filter(id => !arr1.includes(id));
+
+    dadesComparacio = { nom1, nom2, comu, sols1, sols2 };
+    modeComparacio = true;
+
+    document.getElementById('resultats-comparativa').innerHTML = `
+        <div style="background: #f8f9fa; padding: 8px; border-radius: 5px; border: 1px solid #ddd; line-height: 1.6;">
+            <div><span class="color-box" style="background: #2d6a4f;"></span> <b>En comú:</b> ${comu.length} pobles</div>
+            <div><span class="color-box" style="background: #3a86ff;"></span> <b>Només ${nom1}:</b> ${sols1.length} pobles</div>
+            <div><span class="color-box" style="background: #fb8500;"></span> <b>Només ${nom2}:</b> ${sols2.length} pobles</div>
+        </div>
+    `;
+
+    if (geojsonLayer) geojsonLayer.setStyle(obtenirEstil);
+    document.getElementById('comptador').innerHTML = 
+        `<span style="color: #4cc9f0; font-weight: bold;">■ ${nom1}</span> vs <span style="color: #ffb703; font-weight: bold;">■ ${nom2}</span> | Comú: ${comu.length}`;
+    
+    document.getElementById('modal-comparativa').style.display = 'none';
+}
+
+function obtenirEstil(feature) {
+    const id = feature.properties.MUNIINE;
+
+    if (modeComparacio && dadesComparacio) {
+        if (dadesComparacio.comu.includes(id)) return { fillColor: '#2d6a4f', weight: 1, color: '#fff', fillOpacity: 0.8 };
+        if (dadesComparacio.sols1.includes(id)) return { fillColor: '#3a86ff', weight: 1, color: '#fff', fillOpacity: 0.75 };
+        if (dadesComparacio.sols2.includes(id)) return { fillColor: '#fb8500', weight: 1, color: '#fff', fillOpacity: 0.75 };
+        return { fillColor: '#adb5bd', weight: 1, color: '#fff', fillOpacity: 0.3 };
+    } 
+
+    const visitats = usuariActual ? (dadesGlobals[usuariActual] || []) : [];
+    const estaVisitat = visitats.includes(id);
+
+    if (modeActual === 'classic') {
+        return {
+            fillColor: estaVisitat ? '#2d6a4f' : '#adb5bd',
+            weight: 1,
+            color: '#ffffff',
+            fillOpacity: estaVisitat ? 0.75 : 0.4
+        };
+    } else if (modeActual === 'dark') {
+        return {
+            fillColor: estaVisitat ? '#00e676' : '#212529',
+            weight: estaVisitat ? 1.2 : 0.6,
+            color: estaVisitat ? '#00e676' : '#495057',
+            fillOpacity: estaVisitat ? 0.8 : 0.4
+        };
+    } else if (modeActual === 'sat') {
+        return {
+            fillColor: estaVisitat ? '#00f5d4' : 'transparent',
+            weight: estaVisitat ? 1.5 : 0.8,
+            color: estaVisitat ? '#00f5d4' : '#ffffff',
+            fillOpacity: estaVisitat ? 0.5 : 0.1
+        };
+    }
+}
+
+function actualitzarComptador() {
+    if (!modeComparacio && usuariActual) {
+        const visitats = dadesGlobals[usuariActual] || [];
+        document.getElementById('comptador').innerText = `${visitats.length}/${totalMunicipis} pobles`;
+    }
+}
+
+function actualitzarMapa() {
+    if (geojsonLayer) geojsonLayer.setStyle(obtenirEstil);
+    actualitzarComptador();
+}
+
+function reprojectarCoordenades(coords) {
+    if (typeof coords[0] === 'number') return proj4("EPSG:25830", "EPSG:4326", coords);
+    return coords.map(reprojectarCoordenades);
+}
+
+fetch('ca_municipios_20260805.geojson')
+    .then(res => res.json())
+    .then(data => {
+        data.features.forEach(f => f.geometry.coordinates = reprojectarCoordenades(f.geometry.coordinates));
+        totesLesFeatures = data.features;
+        totalMunicipis = data.features.length;
+
+        geojsonLayer = L.geoJSON(data, {
+            style: obtenirEstil,
+            onEachFeature: function(feature, layer) {
+                const id = feature.properties.MUNIINE;
+                const nom = feature.properties.NOMBRE;
+
+                layer.bindTooltip(nom, {
+                    permanent: true,
+                    direction: 'center',
+                    className: 'etiqueta-municipi'
+                });
+
+                layer.on('click', () => {
+                    if (modeComparacio || !usuariActual) return;
+
+                    if (!autoritzatPerEditar) {
+                        const passIngressada = prompt(`Introdueix el codi de seguretat de ${usuariActual} per a poder editar:`);
+                        if (passIngressada === null) return;
+                        
+                        if (passIngressada === contrasenyesGlobals[usuariActual]) {
+                            autoritzatPerEditar = true;
+                        } else {
+                            alert("Codi incorrecte.");
+                            return;
+                        }
+                    }
+                    
+                    if (!dadesGlobals[usuariActual]) dadesGlobals[usuariActual] = [];
+                    let list = dadesGlobals[usuariActual];
+
+                    if (list.includes(id)) {
+                        dadesGlobals[usuariActual] = list.filter(item => item !== id);
+                    } else {
+                        dadesGlobals[usuariActual].push(id);
+                    }
+
+                    actualitzarMapa();
+                    guardarDadesNuvol();
+                });
+            }
+        }).addTo(map);
+
+        map.fitBounds(geojsonLayer.getBounds());
+        carregarDadesNuvol();
+        controlarVisibilitatNoms();
+    });
